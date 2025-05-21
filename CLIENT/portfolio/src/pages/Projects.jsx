@@ -7,7 +7,7 @@ function Projects() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch("http://localhost:3001/api/projects")
+        fetch("https://awsam-ibraheem-bisan-safadi-portfolio.onrender.com/api/projects")
             .then((res) => res.json())
             .then((data) => {
                 setProjects(data);
@@ -18,6 +18,7 @@ function Projects() {
                 setLoading(false);
             });
     }, []);
+
 
     return (
         <div>
