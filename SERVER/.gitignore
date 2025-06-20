@@ -1,0 +1,9 @@
+# קובצי סביבת עבודה שלא מעלים
+.env
+node_modules/
+.DS_Store
+
+# תיקיות לוגים
+logs
+*.log
+npm-debug.log*
