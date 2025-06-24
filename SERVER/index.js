@@ -4,18 +4,36 @@ const cors = require("cors");
 const app = express();
 const PORT = 3001;
 require("dotenv").config();
+const pool = require("./db");
 
 app.use(cors());
 app.use(express.json());
 
-app.get("/api/projects", (req, res) => {
-    res.json([
-        { id: 1, title: "Weather App", description: "React app using OpenWeatherMap API" },
-        { id: 2, title: "Task Manager", description: "To-do app with MongoDB" },
-        { id: 3, title: "Portfolio", description: "This portfolio website!" }
-    ]);
+// קריאה מה-DB לטבלת projects
+app.get("/api/projects", async (req, res) => {
+    try {
+        const result = await pool.query("SELECT * FROM projects");
+        res.json(result.rows);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send("DB error");
+    }
 });
 
+// שליחת הודעת צור קשר
+app.post("/api/contact", async (req, res) => {
+    const { name, email, message } = req.body;
+    try {
+        await pool.query(
+            "INSERT INTO contact_messages (name, email, message) VALUES ($1, $2, $3)",
+            [name, email, message]
+        );
+        res.status(201).send("Message received!");
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send("Server error");
+    }
+});
 
 app.get("/", (req, res) => {
     res.send("Server is running. Use /api/projects to get data.");
