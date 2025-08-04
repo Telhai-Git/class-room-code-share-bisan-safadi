@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Container, Box, CssBaseline, ThemeProvider, createTheme } from "@mui/material";
 import { useContext } from "react";
 import { AppContext } from "./context/AppContext";
+import 'bootstrap/dist/css/bootstrap.min.css';
+
 
 import Header from "./components/Header.jsx";
 import Footer from "./components/Footer.jsx";
@@ -28,13 +30,12 @@ function App() {
   });
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
+  <ThemeProvider theme={theme}>
+    <CssBaseline />
+    <div className="App"> {/* ✅ Add this wrapper to apply background */}
       <Router>
         <Header />
-        
-        {/* 🚫 REMOVE <Menu /> since it's now inside Header */}
-        
+
         <Container maxWidth="md">
           <Box sx={{ my: 4 }}>
             <Routes>
@@ -51,8 +52,10 @@ function App() {
 
         <Footer />
       </Router>
-    </ThemeProvider>
-  );
+    </div>
+  </ThemeProvider>
+);
+
 }
 
 export default App;
