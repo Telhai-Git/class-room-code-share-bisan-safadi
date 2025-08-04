@@ -12,7 +12,7 @@ function Footer() {
             }}
         >
             <Typography variant="body2" color="textSecondary">
-                © Osem 2025 — All rights reserved.
+                © Awsam&Bisan 2025 — All rights reserved.
             </Typography>
         </Box>
     );

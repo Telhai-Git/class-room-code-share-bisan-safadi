@@ -6,17 +6,21 @@ import { AppContext } from "./context/AppContext";
 
 import Header from "./components/Header.jsx";
 import Footer from "./components/Footer.jsx";
-import Menu from "./components/Menu.jsx";
+
+// 🚫 REMOVE this line
+// import Menu from "./components/Menu.jsx";
 
 import Home from "./pages/Home.jsx";
 import About from "./pages/About.jsx";
 import Projects from "./pages/Projects.jsx";
 import Contact from "./pages/Contact.jsx";
+import CV from "./pages/CV.jsx";
+import Blog from "./pages/Blog.jsx";
+import Login from "./pages/Login.jsx";
 
 function App() {
   const { darkMode } = useContext(AppContext);
 
-  // יצירת theme לפי מצב כהה או בהיר
   const theme = createTheme({
     palette: {
       mode: darkMode ? "dark" : "light",
@@ -28,7 +32,9 @@ function App() {
       <CssBaseline />
       <Router>
         <Header />
-        <Menu />
+        
+        {/* 🚫 REMOVE <Menu /> since it's now inside Header */}
+        
         <Container maxWidth="md">
           <Box sx={{ my: 4 }}>
             <Routes>
@@ -36,9 +42,13 @@ function App() {
               <Route path="/about" element={<About />} />
               <Route path="/projects" element={<Projects />} />
               <Route path="/contact" element={<Contact />} />
+              <Route path="/cv" element={<CV />} />
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/login" element={<Login />} />
             </Routes>
           </Box>
         </Container>
+
         <Footer />
       </Router>
     </ThemeProvider>
