@@ -4,6 +4,8 @@ import { Container, Box, CssBaseline, ThemeProvider, createTheme } from "@mui/ma
 import { useContext } from "react";
 import { AppContext } from "./context/AppContext";
 import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootstrap-icons/font/bootstrap-icons.css';
+
 
 
 import Header from "./components/Header.jsx";

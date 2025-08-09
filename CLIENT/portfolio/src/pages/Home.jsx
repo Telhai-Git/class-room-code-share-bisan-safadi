@@ -1,18 +1,22 @@
-// src/pages/Home.jsx
 import React from "react";
 import { Container, Row, Col, Card } from "react-bootstrap";
 import "./Home.css";
 
 function Home() {
     return (
-        <Container className="py-5"> {/* Remove 'fluid' here */}
-            {/* Welcome Text Centered */}
+        <Container className="py-5">
+            {/* Welcome Title */}
             <div className="text-center">
-                <h1 className="mb-4 text-purple display-4">Welcome to Our Portfolio</h1>
-
+            <h1 className="mb-4 text-purple display-4 title-accent title-animate">
+                Welcome to Our Portfolio
+            </h1>
+            </div>
+            {/* Subtitle Paragraphs Centered */}
+            <div className="text-center">
                 <p className="lead text-muted">
-                    We are a creative and collaborative team passionate about building modern web applications.
+                    Two curious minds, one shared journey — building, learning, and evolving through every fullstack challenge.
                 </p>
+                <i className="bi bi-quote text-purple fs-3 d-block mb-2"></i>
                 <p className="subtitle-font fst-italic text-secondary">
                     “Innovation, elegance, and teamwork — that’s what defines us.”
                 </p>
@@ -25,7 +29,7 @@ function Home() {
             <Row className="mt-5 justify-content-center">
                 {/* Bisan Card */}
                 <Col xs={12} md={6} lg={4} className="mb-4">
-                    <Card className="team-card shadow-lg border-0">
+                    <Card className="team-card shadow-sm border-0 card-animate">
                         <Card.Img variant="top" src="/images/bisan.jpg" className="team-img" />
                         <Card.Body>
                             <Card.Title className="text-purple">Bisan</Card.Title>
@@ -38,7 +42,7 @@ function Home() {
 
                 {/* Awsam Card */}
                 <Col xs={12} md={6} lg={4} className="mb-4">
-                    <Card className="team-card shadow-lg border-0">
+                    <Card className="team-card shadow-sm border-0 card-animate">
                         <Card.Img variant="top" src="/images/awsam.jpg" className="team-img" />
                         <Card.Body>
                             <Card.Title className="text-purple">Awsam</Card.Title>
