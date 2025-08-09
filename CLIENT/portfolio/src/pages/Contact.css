@@ -1,0 +1,99 @@
+/* src/pages/Contact.css */
+/* If these exist globally already, keep just what's missing */
+
+.text-purple { color: #6f42c1; }
+
+/* Optional underline accent for titles */
+.title-accent {
+  position: relative;
+  display: inline-block;
+  padding-bottom: 6px;
+}
+.title-accent::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 0;
+  height: 3px;
+  width: 140px;
+  background: #6f42c1;
+  border-radius: 999px;
+  opacity: 0.9;
+}
+
+/* Light entrance animation (match Home if you already have one) */
+.title-animate {
+  animation: fadeUp 500ms ease-out both;
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.contact-card {
+  border: 0;
+  border-radius: 1rem;
+}
+
+
+
+.social-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  opacity: 0.95;
+}
+.social-link:hover { opacity: 1; }
+
+.btn-purple {
+  background-color: #6f42c1;
+  border-color: #6f42c1;
+}
+.btn-purple:hover,
+.btn-purple:focus {
+  background-color: #5a33a5;
+  border-color: #5a33a5;
+}
+
+/* Soft page background like your screenshot */
+body .contact-page-bg {
+  background: linear-gradient(180deg, #f5efff 0%, #f7f3ff 100%);
+}
+/* Force the title to be centered */
+.contact-title {
+  text-align: center !important;
+  width: 100%;
+  display: block;
+}
+
+/* Ensure underline is centered under the text */
+.contact-title.title-accent::after {
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+}
+
+.contact-list a {
+  color: inherit;
+  transition: color 0.2s ease-in-out;
+}
+.contact-list a:hover {
+  color: #6f42c1;
+  text-decoration: underline;
+}
+
+.contact-list i {
+  line-height: 1;
+  margin-top: 2px;
+  color: #6f42c1; /* Purple theme color */
+}
+
+.review-star {
+  cursor: pointer;
+  color: #6f42c1;
+  transition: transform 0.2s ease-in-out;
+}
+.review-star:hover {
+  transform: scale(1.2);
+}
