@@ -88,47 +88,37 @@ const handleReviewSubmit = async () => {
 
   try {
     setReviewLoading(true);
+    const reviewText = `[REVIEW ⭐${review.rating}] ${review.comment.trim()}`;
+
     const res = await fetch(
-      "https://awsam-ibraheem-bisan-safadi-portfolio.onrender.com/api/reviews",
+      "https://awsam-ibraheem-bisan-safadi-portfolio.onrender.com/api/contact",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        // send name/email too (many backends expect these)
         body: JSON.stringify({
           name: form.name?.trim() || "Anonymous",
           email: isValidEmail(form.email) ? form.email.trim() : "",
-          rating: review.rating,
-          comment: review.comment.trim(),
+          message: reviewText,
         }),
       }
     );
 
-    let serverText = "";
-    let data = null;
-    const ct = res.headers.get("content-type") || "";
-    if (ct.includes("application/json")) {
-      data = await res.json();
-      serverText = data?.message || "";
-    } else {
-      serverText = await res.text(); // capture plain-text errors
-    }
-
     if (res.ok) {
       setReview({ rating: 0, comment: "" });
-      setReviewMsg(serverText || "Thank you for your review!");
+      setReviewMsg("Thank you for your review!");
     } else {
+      const text = await res.text();
       setReviewError(true);
-      setReviewMsg(serverText || `Error ${res.status}: Please try again.`);
-      console.warn("Review submit error:", res.status, serverText);
+      setReviewMsg(text || "Something went wrong. Please try again.");
     }
   } catch (err) {
-    console.error(err);
     setReviewError(true);
     setReviewMsg("Network error. Please try again.");
   } finally {
     setReviewLoading(false);
   }
 };
+
 
 
   return (
