@@ -60,15 +60,21 @@ export default function Contact() {
 
     try {
       setLoading(true);
+
+      // ↓ Add these two lines
+      const body = {
+        name: form.name.trim(),
+        email: form.email.trim(),
+        message: form.message.trim(),
+        rating: Number(form.rating),
+      };
+      console.log("POST /api/contact ->", API_BASE, body); // should show rating: 1..5
+
+      // ↓ Use the body in fetch (replace your old JSON.stringify({...}))
       const res = await fetch(`${API_BASE}/api/contact`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: form.name.trim(),
-          email: form.email.trim(),
-          message: form.message.trim(),
-          rating: form.rating, // <-- send rating
-        }),
+        body: JSON.stringify(body),
       });
 
       // Try JSON, fallback to text

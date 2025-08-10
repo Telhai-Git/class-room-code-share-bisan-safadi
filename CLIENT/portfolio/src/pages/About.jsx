@@ -10,7 +10,7 @@ const teamMembers = [
         education: "Computer Science student 🎓",
         image: "/images/bisan.jpg",
         linkedin: "https://www.linkedin.com/in/bisan-safadi-ba743531b/",
-        github: "https://github.com/dashboard",
+        github: "https://github.com/BisanSafadi",
         bio: "Bisan is a dedicated and creative developer who enjoys building user-friendly interfaces and learning new technologies. She's passionate about teamwork and turning ideas into real applications.",
     },
     {
@@ -19,7 +19,7 @@ const teamMembers = [
         education: "Computer Science student 🎓",
         image: "/images/awsam.jpg",
         linkedin: "https://www.linkedin.com/in/bisan-safadi-ba743531b/", // Replace with Awsam's actual LinkedIn if different
-        github: "https://github.com/dashboard", // Replace with his GitHub if different
+        github: "https://github.com/awsamIbr", // Replace with his GitHub if different
         bio: "Awsam is a sharp and focused developer who enjoys solving complex backend problems and creating robust fullstack apps. He brings clean code and creative ideas to every project.",
     }
 ];
