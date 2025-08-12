@@ -2,6 +2,8 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -67,6 +69,79 @@ app.post("/api/contact", async (req, res) => {
   }
 });
 
+
+async function ensureAdmins() {
+  const admins = [
+    { username: "awsam", password: "1601" },
+    { username: "bisan", password: "1601" },
+  ];
+
+  for (const a of admins) {
+    const { rows } = await pool.query(
+      "SELECT id FROM admin_users WHERE username=$1",
+      [a.username]
+    );
+    if (!rows.length) {
+      const hash = await bcrypt.hash(a.password, 12);
+      await pool.query(
+        "INSERT INTO admin_users (username, password_hash) VALUES ($1,$2)",
+        [a.username, hash]
+      );
+      console.log(`[SEED] Created admin ${a.username}`);
+    }
+  }
+}
+ensureAdmins().catch((e) => console.error("[SEED ERROR]", e));
+
+const JWT_SECRET = process.env.JWT_SECRET || "dev-change-me";
+
+// middleware
+function adminAuth(req, res, next) {
+  const hdr = req.headers.authorization || "";
+  const token = hdr.startsWith("Bearer ") ? hdr.slice(7) : null;
+  if (!token) return res.status(401).json({ message: "Unauthorized" });
+  try {
+    const payload = jwt.verify(token, JWT_SECRET);
+    req.user = payload; // { sub, username, role }
+    next();
+  } catch {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+}
+
+// login
+app.post("/api/admin/login", async (req, res) => {
+  const { username, password } = req.body || {};
+  if (!username || !password) {
+    return res.status(400).json({ message: "username and password are required" });
+  }
+
+  const { rows } = await pool.query(
+    "SELECT id, username, password_hash, role FROM admin_users WHERE username=$1",
+    [username]
+  );
+  if (!rows.length) return res.status(401).json({ message: "Invalid credentials" });
+
+  const ok = await bcrypt.compare(password, rows[0].password_hash);
+  if (!ok) return res.status(401).json({ message: "Invalid credentials" });
+
+  const token = jwt.sign(
+    { sub: rows[0].id, username: rows[0].username, role: rows[0].role },
+    JWT_SECRET,
+    { expiresIn: "12h" }
+  );
+  await pool.query("UPDATE admin_users SET last_login = now() WHERE id=$1", [rows[0].id]);
+
+  return res.json({
+    token,
+    user: { id: rows[0].id, username: rows[0].username, role: rows[0].role },
+  });
+});
+
+// example protected route (you’ll add your admin APIs here)
+app.get("/api/admin/me", adminAuth, (req, res) => {
+  res.json({ ok: true, user: req.user });
+});
 
 
 // -------- Health --------
