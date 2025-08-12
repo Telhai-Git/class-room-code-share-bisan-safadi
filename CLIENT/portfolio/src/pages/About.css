@@ -1,124 +1,98 @@
-.text-purple {
-    color: #6f42c1;
-}
+.text-purple { color: #6f42c1; }
 
-.fade-in {
-    animation: fadeIn 1s ease-in;
-}
+.fade-in { animation: fadeIn 1s ease-in; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-.card p {
-    transition: all 0.3s ease;
-}
-
-.btn-outline-purple {
-    color: #6f42c1;
-    border-color: #6f42c1;
-}
-
+.btn-outline-purple { color: #6f42c1; border-color: #6f42c1; }
 .btn-outline-purple:hover,
-.btn-outline-purple:focus {
-    background-color: #6f42c1;
-    color: #fff;
-    border-color: #6f42c1;
-}
+.btn-outline-purple:focus { background-color: #6f42c1; color: #fff; border-color: #6f42c1; }
 
-@keyframes fadeSlideUp {
-    0% {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    100% {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
+/* Optional filled purple button variant to pair with outline */
+.btn-purple,
+.btn-purple:hover,
+.btn-purple:focus { background-color: #6f42c1; color: #fff; border-color: #6f42c1; }
+.btn-purple { transition: transform .15s ease; }
+.btn-purple:active { transform: translateY(1px); }
 
-.title-animate {
-    animation: fadeSlideUp 1s ease-out;
-}
+/* Title accent */
+.title-animate { animation: fadeSlideUp 1s ease-out; }
+@keyframes fadeSlideUp { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 1; transform: translateY(0); } }
 
-.title-accent {
-    position: relative;
-    display: inline-block;
-    padding-bottom: 8px;
-}
-
+.title-accent { position: relative; display: inline-block; padding-bottom: 8px; }
 .title-accent::after {
-    content: "";
-    position: absolute;
-    width: 50%;
-    height: 3px;
-    background-color: #6f42c1;
-    left: 25%;
-    bottom: 0;
-    border-radius: 2px;
-    animation: glow 2s infinite ease-in-out;
+  content: "";
+  position: absolute;
+  width: 50%;
+  height: 3px;
+  background-color: #6f42c1;
+  left: 25%;
+  bottom: 0;
+  border-radius: 2px;
+  animation: glow 2s infinite ease-in-out;
+}
+@keyframes glow { 0% { opacity: .4; } 50% { opacity: 1; } 100% { opacity: .4; } }
+
+/* Card polish */
+.about-card { border-radius: 18px; overflow: hidden; }
+.card-animate { animation: slideFadeIn 0.8s ease both; }
+@keyframes slideFadeIn { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+
+.card-img-top { transition: transform 0.3s ease-in-out; }
+.card-img-top:hover { transform: scale(1.05); }
+
+.avatar-wrapper {
+  width: 136px;
+  height: 136px;
+  border-radius: 50%;
+  padding: 8px;
+  background: conic-gradient(from 180deg at 50% 50%, #6f42c1, #bda1f1, #6f42c1);
+  display: grid;
+  place-items: center;
 }
 
-@keyframes glow {
-    0% { opacity: 0.4; }
-    50% { opacity: 1; }
-    100% { opacity: 0.4; }
-}
-
-.card-img-top {
-    transition: transform 0.3s ease-in-out;
-}
-
-.card-img-top:hover {
-    transform: scale(1.05);
-}
-
-.card-animate {
-    animation: slideFadeIn 0.8s ease both;
-}
-
-
-@keyframes slideFadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.icon-link {
-    transition: color 0.3s ease;
-}
-
-.icon-link:hover {
-    color: #6f42c1 !important;
-}
+/* Links */
+.icon-link { transition: color 0.3s ease, transform 0.15s ease; }
+.icon-link:hover { color: #6f42c1 !important; transform: translateY(-1px); }
 
 /* Bio animated slide-in */
 .bio-text {
-    max-height: 0;
-    overflow: hidden;
-    opacity: 0;
-    font-style: italic;
-    position: relative;
-    padding-left: 20px;
-    border-left: 3px solid #6f42c1;
-    color: #555;
-    transition: max-height 0.5s ease, opacity 0.5s ease;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  font-style: italic;
+  position: relative;
+  padding-left: 20px;
+  border-left: 3px solid #6f42c1;
+  color: #555;
+  transition: max-height 0.4s ease, opacity 0.4s ease;
+}
+.bio-text.show { max-height: 300px; opacity: 1; }
+
+/* Levels panel (collapsible container) */
+.levels-panel {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.35s ease;
+}
+.levels-panel.open { max-height: 600px; }
+
+/* Skill chips */
+.skill-chip {
+  border-radius: 999px;
+  border: 1px solid rgba(111, 66, 193, 0.25);
+  background: #fff;
+  box-shadow: 0 1px 0 rgba(17, 17, 26, 0.05);
+  padding: 6px 10px;
 }
 
-.bio-text.show {
-    max-height: 300px;
-    opacity: 1;
+/* Progress bars */
+.skill-bar .progress-bar {
+  background: linear-gradient(90deg, #6f42c1, #bda1f1);
 }
 
+/* Section background */
 .about-section {
-    background: linear-gradient(to bottom right, #f9f6ff, #ffffff);
-    border-radius: 20px;
-    padding: 60px 30px;
+  background: linear-gradient(to bottom right, #f9f6ff, #ffffff);
+  border-radius: 20px;
+  padding: 60px 30px;
 }
-
