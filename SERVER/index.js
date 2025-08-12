@@ -43,26 +43,29 @@ app.post("/api/contact", async (req, res) => {
       return res.status(400).json({ message: "rating must be an integer 1–5." });
     }
 
-    // IMPORTANT: write to the DB column named 'rating'
     const sql = `
       INSERT INTO contact_messages (name, email, message, rating)
       VALUES ($1, $2, $3, $4)
-      RETURNING id, created_at, rating 
+      RETURNING id, created_at, rating
     `;
-    const { rows } = await pool.query(sql, [name, email, message, rating]);
+    // Use r here (NOT rating)
+    const { rows } = await pool.query(sql, [name, email, message, r]);
 
     return res.status(201).json({
       message: "Message received!",
       id: rows[0].id,
       created_at: rows[0].created_at,
-      rating: rows[0].review,   // echo back as 'rating' for the client
+      rating: rows[0].rating
     });
   } catch (err) {
     console.error("POST /api/contact error:", err);
-    return res.status(500).json({ message: "Server error" });
+    // Optional: add detail during dev to see exact stack
+    return res.status(500).json({
+      message: "Server error",
+      // detail: String(err.stack || err),
+    });
   }
 });
-
 
 
 
