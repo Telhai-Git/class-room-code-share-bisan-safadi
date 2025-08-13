@@ -10,6 +10,8 @@ const PORT = process.env.PORT || 3001;
 const pool = require("./db");
 
 console.log("[BOOT] Server starting", new Date().toISOString());
+console.log("[BOOT] Reviews route mounted");
+
 
 app.use(cors());
 app.use(express.json());
@@ -68,6 +70,31 @@ app.post("/api/contact", async (req, res) => {
     });
   }
 });
+
+
+// -------- Public Reviews (read-only) --------
+app.get("/api/reviews", async (req, res) => {
+  try {
+    const minRating = Math.max(1, Math.min(5, parseInt(req.query.minRating || "1", 10)));
+    const limit = Math.min(parseInt(req.query.limit || "20", 10), 100);
+    const offset = parseInt(req.query.offset || "0", 10);
+
+    const { rows } = await pool.query(
+      `SELECT id, name, message, rating, created_at
+       FROM contact_messages
+       WHERE rating >= $1
+       ORDER BY created_at DESC
+       LIMIT $2 OFFSET $3`,
+      [minRating, limit, offset]
+    );
+
+    res.json(rows);
+  } catch (err) {
+    console.error("GET /api/reviews error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 
 
 async function ensureAdmins() {
@@ -147,7 +174,37 @@ app.get("/api/admin/me", adminAuth, (req, res) => {
 // -------- Health --------
 app.get("/", (_req, res) => res.send("API up"));
 
+// ---- DEBUG: list all mounted routes on boot ----
+function logRoutes() {
+  try {
+    console.log("[BOOT] Listing routes:");
+    app._router.stack
+      .filter((l) => l.route && l.route.path)
+      .forEach((l) => {
+        const methods = Object.keys(l.route.methods).join(",").toUpperCase();
+        console.log(`  ${methods.padEnd(10)} ${l.route.path}`);
+      });
+  } catch (e) {
+    console.log("[BOOT] Could not list routes:", e);
+  }
+}
+
+// quick debug endpoint to view routes from the browser
+app.get("/__routes", (_req, res) => {
+  const routes = [];
+  (app._router.stack || []).forEach((l) => {
+    if (l.route && l.route.path) {
+      routes.push({
+        path: l.route.path,
+        methods: Object.keys(l.route.methods),
+      });
+    }
+  });
+  res.json({ ok: true, routes });
+});
+
 // -------- Start server (always last) --------
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
+  logRoutes(); // <-- must print all routes including /api/reviews
 });

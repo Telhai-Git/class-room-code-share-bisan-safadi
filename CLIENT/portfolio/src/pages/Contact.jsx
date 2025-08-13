@@ -1,9 +1,10 @@
 // src/pages/Contact.jsx
-import { useState } from "react";
-import { Container, Row, Col, Card, Form, Button, Alert } from "react-bootstrap";
+import { useState, useEffect } from "react";
+import { Container, Row, Col, Card, Form, Button, Alert, Spinner } from "react-bootstrap";
 import "./Contact.css";
 
 export default function Contact() {
+  // ---- Form state ----
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -16,6 +17,12 @@ export default function Contact() {
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
 
+  // ---- Reviews state ----
+  const [reviews, setReviews] = useState([]);
+  const [minRating, setMinRating] = useState(1);
+  const [loadingReviews, setLoadingReviews] = useState(false);
+  const [reviewsError, setReviewsError] = useState("");
+
   // If you later add Vite env var, this will use it automatically
   const API_BASE =
     (typeof import.meta !== "undefined" &&
@@ -23,6 +30,7 @@ export default function Contact() {
       import.meta.env.VITE_API_BASE) ||
     "https://awsam-ibraheem-bisan-safadi-portfolio.onrender.com";
 
+  // ---- Helpers ----
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((f) => ({ ...f, [name]: value }));
@@ -31,6 +39,38 @@ export default function Contact() {
   const isValidEmail = (email) =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((email || "").trim());
 
+  const Stars = ({ n }) => (
+    <>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <i key={i} className={`bi ${i <= n ? "bi-star-fill" : "bi-star"} me-1`} />
+      ))}
+    </>
+  );
+
+  // ---- Reviews fetch ----
+  const fetchReviews = async () => {
+    setLoadingReviews(true);
+    setReviewsError("");
+    try {
+      const res = await fetch(`${API_BASE}/api/reviews?minRating=${minRating}&limit=50`);
+      const ct = res.headers.get("content-type") || "";
+      const data = ct.includes("application/json") ? await res.json() : await res.text();
+      if (!res.ok) throw new Error(typeof data === "string" ? data : (data?.message || "Failed"));
+      setReviews(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error(err);
+      setReviewsError(String(err.message || err));
+    } finally {
+      setLoadingReviews(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchReviews();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [minRating]);
+
+  // ---- Submit ----
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSuccessMsg("");
@@ -67,11 +107,10 @@ export default function Contact() {
           name: form.name.trim(),
           email: form.email.trim(),
           message: form.message.trim(),
-          rating: form.rating, // <-- send rating
+          rating: form.rating, // send rating
         }),
       });
 
-      // Try JSON, fallback to text
       const ct = res.headers.get("content-type") || "";
       const payload = ct.includes("application/json") ? await res.json() : await res.text();
 
@@ -82,6 +121,8 @@ export default function Contact() {
             : "Thanks! Your message was sent successfully."
         );
         setForm({ name: "", email: "", message: "", website: "", rating: 0 });
+        // refresh the reviews list so the new message appears
+        fetchReviews();
       } else {
         setErrorMsg(
           (typeof payload === "object" && (payload?.message || payload?.detail)) ||
@@ -258,6 +299,55 @@ export default function Contact() {
               </Form>
             </Card.Body>
           </Card>
+        </Col>
+      </Row>
+
+      {/* ===== Reviews Panel ===== */}
+      <Row className="mt-4">
+        <Col>
+          <h2 className="mb-3">Recent Reviews</h2>
+
+          <div className="d-flex align-items-center gap-2 mb-3">
+            <span>Filter:</span>
+            <Form.Select
+              value={minRating}
+              onChange={(e) => setMinRating(parseInt(e.target.value, 10))}
+              style={{ maxWidth: 220 }}
+            >
+              <option value={1}>All ratings (1–5)</option>
+              <option value={2}>2–5</option>
+              <option value={3}>3–5</option>
+              <option value={4}>4–5</option>
+              <option value={5}>Only 5 stars</option>
+            </Form.Select>
+          </div>
+
+          {reviewsError && <Alert variant="danger" className="mb-3">{reviewsError}</Alert>}
+
+          {loadingReviews ? (
+            <div className="d-flex justify-content-center my-4">
+              <Spinner animation="border" role="status" />
+            </div>
+          ) : reviews.length === 0 ? (
+            <Alert variant="secondary">No reviews yet.</Alert>
+          ) : (
+            <Row className="g-3">
+              {reviews.map((r) => (
+                <Col key={r.id} md={6} lg={4}>
+                  <Card className="shadow-sm h-100">
+                    <Card.Body>
+                      <div className="d-flex justify-content-between align-items-start mb-1">
+                        <div className="fw-bold">{(r.name || "Anonymous").split(/\s+/)[0]}</div>
+                        <div className="text-warning"><Stars n={r.rating} /></div>
+                      </div>
+                      <Card.Text className="mb-2">{r.message}</Card.Text>
+                      <div className="text-muted small">{new Date(r.created_at).toLocaleString()}</div>
+                    </Card.Body>
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+          )}
         </Col>
       </Row>
     </Container>
