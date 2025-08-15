@@ -24,6 +24,8 @@ import Contact from "./pages/Contact.jsx";
 import CV from "./pages/CV.jsx";
 import Blog from "./pages/Blog.jsx";
 import Login from "./pages/Login.jsx";
+import ProtectedRoute from "./components/ProtectedRoute";
+import AdminDashboard from "./pages/AdminDashboard.jsx";
 
 function App() {
   const { darkMode } = useContext(AppContext);
@@ -35,31 +37,39 @@ function App() {
   });
 
   return (
-  <ThemeProvider theme={theme}>
-    <CssBaseline />
-    <div className="App"> {/* ✅ Add this wrapper to apply background */}
-      <Router>
-        <Header />
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <div className="App"> {/* ✅ Add this wrapper to apply background */}
+        <Router>
+          <Header />
 
-        <Container maxWidth="md">
-          <Box sx={{ my: 4 }}>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/projects" element={<Projects />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/cv" element={<CV />} />
-              <Route path="/blog" element={<Blog />} />
-              <Route path="/login" element={<Login />} />
-            </Routes>
-          </Box>
-        </Container>
+          <Container maxWidth="md">
+            <Box sx={{ my: 4 }}>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/projects" element={<Projects />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/cv" element={<CV />} />
+                <Route path="/blog" element={<Blog />} />
+                <Route path="/login" element={<Login />} />
+                <Route
+                  path="/admin"
+                  element={
+                    <ProtectedRoute>
+                      <AdminDashboard />
+                    </ProtectedRoute>
+                  }
+                />
+              </Routes>
+            </Box>
+          </Container>
 
-        <Footer />
-      </Router>
-    </div>
-  </ThemeProvider>
-);
+          <Footer />
+        </Router>
+      </div>
+    </ThemeProvider>
+  );
 
 }
 

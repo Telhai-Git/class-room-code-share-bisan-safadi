@@ -1,12 +1,18 @@
+// src/pages/Login.jsx
 import { useState } from "react";
 import { Container, Row, Col, Card, Form, Button, Alert } from "react-bootstrap";
+import { useNavigate } from "react-router-dom";          // ✅ NEW
+import { useApp } from "../context/AppContext";          // ✅ NEW
 import "./Login.css";
 
-export default function AdminLogin({ onLogin }) {
+export default function AdminLogin() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(false);
+
+  const navigate = useNavigate();                        // ✅ NEW
+  const { loginSaveToken } = useApp();                   // ✅ NEW
 
   const API_BASE =
     (typeof import.meta !== "undefined" &&
@@ -37,9 +43,13 @@ export default function AdminLogin({ onLogin }) {
         setErrorMsg(data?.message || "Login failed.");
         return;
       }
-      localStorage.setItem("adminToken", data.token);
+
+      // ✅ Save token via context (also saves to localStorage)
+      loginSaveToken(data.token);
       localStorage.setItem("adminUser", JSON.stringify(data.user));
-      window.location.href = "/admin";
+
+      // ✅ Go to dashboard root (NOT /admin)
+      navigate("/", { replace: true });
     } catch (err) {
       console.error(err);
       setErrorMsg("Network error. Please try again.");
@@ -56,13 +66,10 @@ export default function AdminLogin({ onLogin }) {
             <h2 className="title-accent title-animate text-purple text-center mb-2">
               Admin Login
             </h2>
-
             <p className="text-center text-muted mb-4">
               Welcome back! Please sign in to continue.
             </p>
-
             {errorMsg && <Alert variant="danger">{errorMsg}</Alert>}
-
             <Form onSubmit={handleSubmit} noValidate>
               <Form.Group className="mb-3" controlId="username">
                 <Form.Label>Username</Form.Label>
@@ -76,7 +83,6 @@ export default function AdminLogin({ onLogin }) {
                   required
                 />
               </Form.Group>
-
               <Form.Group className="mb-4" controlId="password">
                 <Form.Label>Password</Form.Label>
                 <Form.Control
@@ -89,12 +95,9 @@ export default function AdminLogin({ onLogin }) {
                   required
                 />
               </Form.Group>
-
               <Button type="submit" className="w-100 btn-purple" disabled={loading}>
                 {loading ? "Logging in..." : "Login"}
               </Button>
-
-              
             </Form>
           </Card>
         </Col>
