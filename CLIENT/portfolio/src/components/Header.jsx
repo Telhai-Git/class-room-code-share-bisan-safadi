@@ -37,12 +37,6 @@ function Header() {
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     {token && (
                         <>
-                            <Button component={Link} to="/admin/projects" color="inherit" variant="text">
-                                Manage Projects
-                            </Button>
-                            <Button component={Link} to="/admin/blog" color="inherit" variant="text">
-                                Manage Blogs
-                            </Button>
                             <Button onClick={onLogout} color="inherit" variant="outlined" sx={{ borderColor: "rgba(255,255,255,.6)" }}>
                                 Logout
                             </Button>

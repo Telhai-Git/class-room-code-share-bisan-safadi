@@ -14,8 +14,6 @@ import "./App.css";
 import Header from "./components/Header.jsx";
 import Footer from "./components/Footer.jsx";
 
-// 🚫 REMOVE this line
-// import Menu from "./components/Menu.jsx";
 
 import Home from "./pages/Home.jsx";
 import About from "./pages/About.jsx";
@@ -53,14 +51,11 @@ function App() {
                 <Route path="/cv" element={<CV />} />
                 <Route path="/blog" element={<Blog />} />
                 <Route path="/login" element={<Login />} />
-                <Route
-                  path="/admin"
-                  element={
-                    <ProtectedRoute>
-                      <AdminDashboard />
-                    </ProtectedRoute>
-                  }
-                />
+                <Route path="/admin" element={<ProtectedRoute />}>
+  <Route index element={<AdminDashboard />} />
+  <Route path="projects" element={<Projects />} />
+  <Route path="blog" element={<Blog />} />
+</Route>
               </Routes>
             </Box>
           </Container>

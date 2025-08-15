@@ -1,0 +1,19 @@
+@import "./About.css"; /* Reuse the shared purple theme and animations */
+
+/* Override for project card animations */
+.card-animate {
+  animation: slideFadeIn 0.8s ease both;
+}
+.title-accent::after {
+  content: "";
+  position: absolute;
+  width: 50%;
+  height: 3px;
+  background-color: #6f42c1;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 0;
+  border-radius: 2px;
+  animation: glow 2s infinite ease-in-out;
+}
+
