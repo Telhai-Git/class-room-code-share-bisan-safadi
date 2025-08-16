@@ -24,19 +24,24 @@ export default function Projects() {
   const [rows, setRows] = useState([]);
   const [q, setQ] = useState("");
 
-  // dialog state
+  // admin create/edit dialog
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
+
+  // read-only details dialog
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [detailsProj, setDetailsProj] = useState(null);
 
   // form state (JS ONLY – no TypeScript annotations)
   const [title, setTitle] = useState("");
   const [summary, setSummary] = useState("");
+  const [details, setDetails] = useState(""); // long text
   const [imageUrl, setImageUrl] = useState("");
   const [githubUrl, setGithubUrl] = useState("");
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [embedCode, setEmbedCode] = useState("");
   const [techInput, setTechInput] = useState("");
-  const [techChips, setTechChips] = useState([]); // ← fixed
+  const [techChips, setTechChips] = useState([]);
 
   async function load() {
     try {
@@ -55,7 +60,8 @@ export default function Projects() {
     return rows.filter(r =>
       (r.title || "").toLowerCase().includes(k) ||
       (r.tech_stack || "").toLowerCase().includes(k) ||
-      (r.summary || "").toLowerCase().includes(k)
+      (r.summary || "").toLowerCase().includes(k) ||
+      ((r.details || r.description || "")).toLowerCase().includes(k) // ✅ search either
     );
   }, [rows, q]);
 
@@ -63,6 +69,7 @@ export default function Projects() {
     setEditingId(null);
     setTitle("");
     setSummary("");
+    setDetails("");
     setImageUrl("");
     setGithubUrl("");
     setYoutubeUrl("");
@@ -80,9 +87,10 @@ export default function Projects() {
     setEditingId(row.id);
     setTitle(row.title || "");
     setSummary(row.summary || "");
+    setDetails(row.details || row.description || ""); // ✅ read either
     setImageUrl(row.image_url || "");
-    setGithubUrl(row.github_url || "");
-    setYoutubeUrl(row.youtube_url || "");
+    setGithubUrl(row.github_url || row.github_link || "");
+    setYoutubeUrl(row.youtube_url || row.live_demo_link || "");
     setEmbedCode(row.embed_code || "");
     const chips = (row.tech_stack || "")
       .split(",")
@@ -118,12 +126,16 @@ export default function Projects() {
     const body = {
       title: title.trim(),
       summary: summary.trim(),
+      details: details.trim(),            // keep modern key
+      description: details.trim(),        // ✅ also send legacy key
       image_url: imageUrl.trim(),
       github_url: githubUrl.trim(),
       youtube_url: youtubeUrl.trim(),
       embed_code: embedCode.trim(),
-      tech_stack: techChips.join(", ")
+      tech_stack: techChips.join(", "),
     };
+    // console.log("[SAVE payload]", body);
+
     if (editingId) {
       await api(`/api/admin/projects/${editingId}`, { method: "PUT", body });
     } else {
@@ -137,6 +149,16 @@ export default function Projects() {
     if (!window.confirm("Delete this project?")) return;
     await api(`/api/admin/projects/${id}`, { method: "DELETE" });
     await load();
+  }
+
+  // read-only details dialog handlers
+  function openDetails(proj) {
+    setDetailsProj(proj);
+    setDetailsOpen(true);
+  }
+  function closeDetails() {
+    setDetailsOpen(false);
+    setDetailsProj(null);
   }
 
   return (
@@ -178,7 +200,16 @@ export default function Projects() {
       {/* cards */}
       <Grid container spacing={3}>
         {filtered.map((proj, i) => (
-          <Grid key={proj.id} item xs={12} sm={6} md={4} lg={3} className="card-animate" style={{ animationDelay: `${i * 0.1}s` }}>
+          <Grid
+            key={proj.id}
+            item
+            xs={12}
+            sm={6}
+            md={4}
+            lg={3}
+            className="card-animate"
+            style={{ animationDelay: `${i * 0.1}s` }}
+          >
             <Card className="about-card" sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
               {proj.image_url && (
                 <CardMedia
@@ -200,21 +231,111 @@ export default function Projects() {
                   {proj.summary || "No summary provided."}
                 </Typography>
               </CardContent>
-              <CardActions sx={{ px: 2, pb: 2 }}>
+
+              {/* unified button style */}
+              <CardActions sx={{ px: 2, pb: 2, gap: 1, flexWrap: "wrap" }}>
                 {proj.github_url && (
-                  <Button size="small" href={proj.github_url} target="_blank" rel="noreferrer" startIcon={<GitHubIcon />}>
+                  <Button
+                    size="small"
+                    href={proj.github_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    startIcon={<GitHubIcon />}
+                    variant="outlined"
+                    sx={{
+                      color: "#6f42c1",
+                      borderColor: "#6f42c1",
+                      borderWidth: 1.5,
+                      textTransform: "uppercase",
+                      borderRadius: 2,
+                      "&:hover": {
+                        borderColor: "#5a35a8",
+                        backgroundColor: "rgba(111,66,193,0.08)",
+                      },
+                    }}
+                  >
                     GitHub
                   </Button>
                 )}
+
                 {proj.youtube_url && (
-                  <Button size="small" href={proj.youtube_url} target="_blank" rel="noreferrer" startIcon={<YouTubeIcon />}>
+                  <Button
+                    size="small"
+                    href={proj.youtube_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    startIcon={<YouTubeIcon />}
+                    variant="outlined"
+                    sx={{
+                      color: "#6f42c1",
+                      borderColor: "#6f42c1",
+                      borderWidth: 1.5,
+                      textTransform: "uppercase",
+                      borderRadius: 2,
+                      "&:hover": {
+                        borderColor: "#5a35a8",
+                        backgroundColor: "rgba(111,66,193,0.08)",
+                      },
+                    }}
+                  >
                     YouTube
                   </Button>
                 )}
+
+                {/* Details button (read-only dialog) */}
+                <Button
+                  size="small"
+                  onClick={() => openDetails(proj)}
+                  variant="outlined"
+                  sx={{
+                    color: "#6f42c1",
+                    borderColor: "#6f42c1",
+                    borderWidth: 1.5,
+                    textTransform: "uppercase",
+                    borderRadius: 2,
+                    "&:hover": {
+                      borderColor: "#5a35a8",
+                      backgroundColor: "rgba(111,66,193,0.08)",
+                    },
+                  }}
+                >
+                  Details
+                </Button>
+
                 {isAdmin && (
-                  <Box sx={{ ml: "auto" }}>
-                    <Button size="small" onClick={() => startEdit(proj)} startIcon={<EditIcon />}>Edit</Button>
-                    <Button size="small" color="error" onClick={() => removeRow(proj.id)} startIcon={<DeleteOutlineIcon />}>Delete</Button>
+                  <Box sx={{ ml: "auto", display: "flex", gap: 1 }}>
+                    <Button
+                      size="small"
+                      onClick={() => startEdit(proj)}
+                      startIcon={<EditIcon />}
+                      variant="outlined"
+                      sx={{
+                        color: "#6f42c1",
+                        borderColor: "#6f42c1",
+                        borderWidth: 1.5,
+                        textTransform: "uppercase",
+                        borderRadius: 2,
+                        "&:hover": {
+                          borderColor: "#5a35a8",
+                          backgroundColor: "rgba(111,66,193,0.08)",
+                        },
+                      }}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      size="small"
+                      color="error"
+                      onClick={() => removeRow(proj.id)}
+                      startIcon={<DeleteOutlineIcon />}
+                      variant="outlined"
+                      sx={{
+                        borderRadius: 2,
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      Delete
+                    </Button>
                   </Box>
                 )}
               </CardActions>
@@ -223,10 +344,12 @@ export default function Projects() {
         ))}
       </Grid>
 
-      {/* redesigned dialog */}
+      {/* admin create/edit dialog */}
       {isAdmin && (
         <Dialog open={open} onClose={() => setOpen(false)} maxWidth="md" fullWidth>
-          <DialogTitle className="text-purple">{editingId ? "Edit Project" : "New Project"}</DialogTitle>
+          <DialogTitle className="text-purple">
+            {editingId ? "Edit Project" : "New Project"}
+          </DialogTitle>
           <DialogContent dividers sx={{ display: "grid", gap: 2 }}>
             {/* basics */}
             <Typography sx={{ fontWeight: 600 }}>Basics</Typography>
@@ -250,7 +373,20 @@ export default function Projects() {
                   sx={{ mt: 2 }}
                   helperText="2–3 lines about what this project does"
                 />
+
+                {/* Details field */}
+                <TextField
+                  label="Details"
+                  value={details}
+                  onChange={e => setDetails(e.target.value)}
+                  fullWidth
+                  multiline
+                  minRows={4}
+                  sx={{ mt: 2 }}
+                  helperText="Longer description about the project"
+                />
               </Grid>
+
               <Grid item xs={12} md={5}>
                 <TextField
                   label="Image URL"
@@ -265,7 +401,7 @@ export default function Projects() {
                       src={imageUrl}
                       alt="Preview"
                       style={{ maxWidth: "100%", maxHeight: 180, borderRadius: 12 }}
-                      onError={(e) => { e.currentTarget.style.display = "none"; }} // ← fixed
+                      onError={(e) => { e.currentTarget.style.display = "none"; }}
                     />
                   ) : (
                     <Typography variant="caption" color="text.secondary">Preview appears here</Typography>
@@ -332,44 +468,104 @@ export default function Projects() {
             </Accordion>
           </DialogContent>
 
-<DialogActions>
-  <Button
-    variant="outlined"
-    onClick={() => setOpen(false)}
-    sx={{
-      color: "#6f42c1",
-      borderColor: "#6f42c1",
-      borderWidth: 1.5,
-      "&:hover": {
-        borderColor: "#5a35a8",
-        backgroundColor: "rgba(111,66,193,0.08)",
-      },
-      textTransform: "uppercase",
-      borderRadius: 2,
-    }}
-  >
-    Cancel
-  </Button>
+          <DialogActions>
+            <Button
+              variant="outlined"
+              onClick={() => setOpen(false)}
+              sx={{
+                color: "#6f42c1",
+                borderColor: "#6f42c1",
+                borderWidth: 1.5,
+                "&:hover": {
+                  borderColor: "#5a35a8",
+                  backgroundColor: "rgba(111,66,193,0.08)",
+                },
+                textTransform: "uppercase",
+                borderRadius: 2,
+              }}
+            >
+              Cancel
+            </Button>
 
-  <Button
-    variant="contained"
-    onClick={save}
-    sx={{
-      backgroundColor: "#6f42c1",
-      "&:hover": { backgroundColor: "#5a35a8" },
-      color: "#fff",
-      textTransform: "uppercase",
-      borderRadius: 2,
-      boxShadow: "0 2px 8px rgba(111,66,193,0.35)",
-    }}
-  >
-    Save
-  </Button>
-</DialogActions>
-
-          
+            <Button
+              variant="contained"
+              onClick={save}
+              sx={{
+                backgroundColor: "#6f42c1",
+                "&:hover": { backgroundColor: "#5a35a8" },
+                color: "#fff",
+                textTransform: "uppercase",
+                borderRadius: 2,
+                boxShadow: "0 2px 8px rgba(111,66,193,0.35)",
+              }}
+            >
+              Save
+            </Button>
+          </DialogActions>
         </Dialog>
       )}
+
+      {/* read-only details dialog */}
+      <Dialog open={detailsOpen} onClose={closeDetails} maxWidth="md" fullWidth>
+        <DialogTitle className="text-purple">
+          {detailsProj?.title || "Project Details"}
+        </DialogTitle>
+        <DialogContent dividers>
+          {detailsProj?.image_url && (
+            <Box sx={{ mb: 2, textAlign: "center" }}>
+              <img
+                src={detailsProj.image_url}
+                alt={detailsProj.title}
+                style={{ maxWidth: "100%", maxHeight: 260, borderRadius: 12 }}
+                onError={(e) => { e.currentTarget.style.display = "none"; }}
+              />
+            </Box>
+          )}
+
+          {detailsProj?.tech_stack && (
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mb: 2 }}>
+              {detailsProj.tech_stack.split(",").map((t, idx) => (
+                <Chip key={idx} size="small" label={t.trim()} />
+              ))}
+            </Box>
+          )}
+
+          <Typography variant="body1" sx={{ mb: 2 }}>
+            {detailsProj?.summary || "No summary provided."}
+          </Typography>
+
+          {/* Show long details or description */}
+          {(detailsProj?.details || detailsProj?.description) && (
+            <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", mb: 2 }}>
+              {detailsProj.details || detailsProj.description}
+            </Typography>
+          )}
+
+          {/* Show embed code if exists */}
+          {detailsProj?.embed_code && (
+            <Box sx={{ mt: 1 }} dangerouslySetInnerHTML={{ __html: detailsProj.embed_code }} />
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={closeDetails}
+            variant="outlined"
+            sx={{
+              color: "#6f42c1",
+              borderColor: "#6f42c1",
+              borderWidth: 1.5,
+              "&:hover": {
+                borderColor: "#5a35a8",
+                backgroundColor: "rgba(111,66,193,0.08)",
+              },
+              textTransform: "uppercase",
+              borderRadius: 2,
+            }}
+          >
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

@@ -8,6 +8,7 @@ const jwt = require("jsonwebtoken");
 const app = express();
 const PORT = process.env.PORT || 3001;
 const pool = require("./db");
+app.use(express.json({ limit: "2mb" }));
 
 console.log("[BOOT] Server starting", new Date().toISOString());
 console.log("[BOOT] Reviews route mounted");
@@ -16,15 +17,22 @@ app.use(cors());
 app.use(express.json());
 
 // -------- Projects --------
+// Public list
 app.get("/api/projects", async (_req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM projects");
-    res.json(result.rows);
-  } catch (err) {
-    console.error(err.message);
+    const sql = `
+      SELECT id, title, summary, details, image_url, github_url, youtube_url, embed_code, tech_stack
+      FROM projects
+      ORDER BY id DESC
+    `;
+    const { rows } = await pool.query(sql);
+    res.json(rows);
+  } catch (e) {
+    console.error("GET /api/projects", e);
     res.status(500).send("DB error");
   }
 });
+
 
 // -------- Contact --------
 app.post("/api/contact", async (req, res) => {
@@ -240,53 +248,87 @@ app.get("/api/admin/me", adminAuth, (req, res) => {
 });
 
 /* -------------------- ADMIN: Projects CRUD -------------------- */
-// Create project
-app.post("/api/admin/projects", adminAuth, async (req, res) => {
+// --- Create project ---
+app.post("/api/admin/projects", async (req, res) => {
   try {
-    const {
-      title, summary, image_url, github_url, youtube_url, embed_code, tech_stack,
-    } = req.body || {};
-    const { rows } = await pool.query(
-      `INSERT INTO projects (title, summary, image_url, github_url, youtube_url, embed_code, tech_stack)
-       VALUES ($1,$2,$3,$4,$5,$6,$7)
-       RETURNING *`,
-      [title||"", summary||"", image_url||null, github_url||null, youtube_url||null, embed_code||null, tech_stack||null]
-    );
-    res.status(201).json(rows[0]);
-  } catch (e) {
-    console.error("[admin projects create]", e);
-    res.status(500).json({ message: "Failed to create project" });
+    const b = req.body ?? {};
+
+    // Accept both modern and legacy keys
+    const title       = (b.title ?? "").trim();
+    const summary     = (b.summary ?? "").trim();
+    const detailsVal  = (b.details ?? b.description ?? "").trim();   // ✅ accept either
+    const image_url   = (b.image_url ?? "").trim();
+    const github_url  = (b.github_url ?? b.github_link ?? "").trim(); // ✅ accept either
+    const youtube_url = (b.youtube_url ?? b.live_demo_link ?? "").trim(); // ✅ accept either
+    const embed_code  = b.embed_code ?? "";
+    const tech_stack  = (b.tech_stack ?? "").trim();
+
+    if (!title) return res.status(400).json({ message: "title is required" });
+
+    // Write to BOTH columns so legacy + new stay in sync
+    const sql = `
+      INSERT INTO projects
+        (title, summary, details, description, image_url, github_url, youtube_url, embed_code, tech_stack)
+      VALUES
+        ($1,    $2,     $3,      $3,          $4,        $5,         $6,          $7,         $8)
+      RETURNING *
+    `;
+    const params = [title, summary, detailsVal, image_url, github_url, youtube_url, embed_code, tech_stack];
+
+    console.log("[CREATE] req.body.details|description =", b.details, "|", b.description);
+    const { rows } = await pool.query(sql, params);
+    return res.status(201).json(rows[0]);
+  } catch (err) {
+    console.error("POST /api/admin/projects error:", err);
+    return res.status(500).send("DB error");
   }
 });
 
-// Update project
-app.put("/api/admin/projects/:id", adminAuth, async (req, res) => {
+// --- UPDATE ---
+app.put("/api/admin/projects/:id", async (req, res) => {
   try {
-    const id = parseInt(req.params.id, 10);
-    const {
-      title, summary, image_url, github_url, youtube_url, embed_code, tech_stack,
-    } = req.body || {};
-    const { rows } = await pool.query(
-      `UPDATE projects SET
-         title=COALESCE($2,title),
-         summary=COALESCE($3,summary),
-         image_url=COALESCE($4,image_url),
-         github_url=COALESCE($5,github_url),
-         youtube_url=COALESCE($6,youtube_url),
-         embed_code=COALESCE($7,embed_code),
-         tech_stack=COALESCE($8,tech_stack)
-       WHERE id=$1
-       RETURNING *`,
-      [id, title, summary, image_url, github_url, youtube_url, embed_code, tech_stack]
-    );
-    if (!rows.length) return res.status(404).json({ message: "Not found" });
-    res.json(rows[0]);
-  } catch (e) {
-    console.error("[admin projects update]", e);
-    res.status(500).json({ message: "Failed to update project" });
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) return res.status(400).json({ message: "invalid id" });
+
+    const b = req.body ?? {};
+
+    // Accept both modern and legacy keys
+    const title       = (b.title ?? "").trim();
+    const summary     = (b.summary ?? "").trim();
+    const detailsVal  = (b.details ?? b.description ?? "").trim();   // ✅ accept either
+    const image_url   = (b.image_url ?? "").trim();
+    const github_url  = (b.github_url ?? b.github_link ?? "").trim(); // ✅ accept either
+    const youtube_url = (b.youtube_url ?? b.live_demo_link ?? "").trim(); // ✅ accept either
+    const embed_code  = b.embed_code ?? "";
+    const tech_stack  = (b.tech_stack ?? "").trim();
+
+    // Update BOTH columns so legacy + new stay in sync
+    const sql = `
+      UPDATE projects
+      SET
+        title=$1,
+        summary=$2,
+        details=$3,
+        description=$3,
+        image_url=$4,
+        github_url=$5,
+        youtube_url=$6,
+        embed_code=$7,
+        tech_stack=$8
+      WHERE id=$9
+      RETURNING *
+    `;
+    const params = [title, summary, detailsVal, image_url, github_url, youtube_url, embed_code, tech_stack, id];
+
+    console.log("[UPDATE] req.body.details|description =", b.details, "|", b.description);
+    const { rows } = await pool.query(sql, params);
+    if (!rows.length) return res.status(404).json({ message: "not found" });
+    return res.json(rows[0]);
+  } catch (err) {
+    console.error("PUT /api/admin/projects/:id error:", err);
+    return res.status(500).send("DB error");
   }
 });
-
 // Delete project
 app.delete("/api/admin/projects/:id", adminAuth, async (req, res) => {
   try {
