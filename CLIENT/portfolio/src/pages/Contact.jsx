@@ -1,9 +1,14 @@
 // src/pages/Contact.jsx
 import { useState, useEffect } from "react";
 import { Container, Row, Col, Card, Form, Button, Alert, Spinner } from "react-bootstrap";
+import { useApp } from "../context/AppContext"; // ← for admin token
 import "./Contact.css";
 
 export default function Contact() {
+  // admin token (if logged in)
+  const { token } = useApp();           // expects AppContext to provide { token }
+  const isAdmin = !!token;
+
   // ---- Form state ----
   const [form, setForm] = useState({
     name: "",
@@ -22,6 +27,9 @@ export default function Contact() {
   const [minRating, setMinRating] = useState(1);
   const [loadingReviews, setLoadingReviews] = useState(false);
   const [reviewsError, setReviewsError] = useState("");
+
+  // deleting state (for per-card spinner)
+  const [deletingId, setDeletingId] = useState(null);
 
   // If you later add Vite env var, this will use it automatically
   const API_BASE =
@@ -135,6 +143,34 @@ export default function Contact() {
       setErrorMsg("Network error. Please check your connection and try again.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ---- Admin: Delete a contact message ----
+  const handleDeleteReview = async (id) => {
+    if (!isAdmin || !token) return;
+    const ok = window.confirm("Delete this message permanently?");
+    if (!ok) return;
+    try {
+      setDeletingId(id);
+      const res = await fetch(`${API_BASE}/api/admin/contact/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const ct = res.headers.get("content-type") || "";
+        const payload = ct.includes("application/json") ? await res.json() : await res.text();
+        throw new Error(
+          (typeof payload === "object" && (payload?.message || payload?.detail)) ||
+          (typeof payload === "string" ? payload : "Failed to delete")
+        );
+      }
+      // refresh list after delete
+      fetchReviews();
+    } catch (e) {
+      alert(`Delete failed: ${e.message || e}`);
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -342,6 +378,27 @@ export default function Contact() {
                       </div>
                       <Card.Text className="mb-2">{r.message}</Card.Text>
                       <div className="text-muted small">{new Date(r.created_at).toLocaleString()}</div>
+
+                      {/* Admin-only delete */}
+                      {isAdmin && (
+                        <div className="d-flex justify-content-end mt-2">
+                          <Button
+                            variant="outline-danger"
+                            size="sm"
+                            onClick={() => handleDeleteReview(r.id)}
+                            disabled={deletingId === r.id}
+                          >
+                            {deletingId === r.id ? (
+                              <>
+                                <span className="spinner-border spinner-border-sm me-2" />
+                                Deleting...
+                              </>
+                            ) : (
+                              "Delete"
+                            )}
+                          </Button>
+                        </div>
+                      )}
                     </Card.Body>
                   </Card>
                 </Col>

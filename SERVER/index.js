@@ -254,14 +254,14 @@ app.post("/api/admin/projects", async (req, res) => {
     const b = req.body ?? {};
 
     // Accept both modern and legacy keys
-    const title       = (b.title ?? "").trim();
-    const summary     = (b.summary ?? "").trim();
-    const detailsVal  = (b.details ?? b.description ?? "").trim();   // ✅ accept either
-    const image_url   = (b.image_url ?? "").trim();
-    const github_url  = (b.github_url ?? b.github_link ?? "").trim(); // ✅ accept either
+    const title = (b.title ?? "").trim();
+    const summary = (b.summary ?? "").trim();
+    const detailsVal = (b.details ?? b.description ?? "").trim();   // ✅ accept either
+    const image_url = (b.image_url ?? "").trim();
+    const github_url = (b.github_url ?? b.github_link ?? "").trim(); // ✅ accept either
     const youtube_url = (b.youtube_url ?? b.live_demo_link ?? "").trim(); // ✅ accept either
-    const embed_code  = b.embed_code ?? "";
-    const tech_stack  = (b.tech_stack ?? "").trim();
+    const embed_code = b.embed_code ?? "";
+    const tech_stack = (b.tech_stack ?? "").trim();
 
     if (!title) return res.status(400).json({ message: "title is required" });
 
@@ -293,19 +293,19 @@ app.put("/api/admin/projects/:id", async (req, res) => {
     const b = req.body ?? {};
 
     // Accept both modern and legacy keys
-    const title       = (b.title ?? "").trim();
-    const summary     = (b.summary ?? "").trim();
-    const detailsVal  = (b.details ?? b.description ?? "").trim();   // ✅ accept either
-    const image_url   = (b.image_url ?? "").trim();
-    const github_url  = (b.github_url ?? b.github_link ?? "").trim(); // ✅ accept either
+    const title = (b.title ?? "").trim();
+    const summary = (b.summary ?? "").trim();
+    const detailsVal = (b.details ?? b.description ?? "").trim();   // ✅ accept either
+    const image_url = (b.image_url ?? "").trim();
+    const github_url = (b.github_url ?? b.github_link ?? "").trim(); // ✅ accept either
     const youtube_url = (b.youtube_url ?? b.live_demo_link ?? "").trim(); // ✅ accept either
-    const embed_code  = b.embed_code ?? "";
-    const tech_stack  = (b.tech_stack ?? "").trim();
+    const embed_code = b.embed_code ?? "";
+    const tech_stack = (b.tech_stack ?? "").trim();
 
     // Update BOTH columns so legacy + new stay in sync
     const sql = `
       UPDATE projects
-      SET
+      SETd
         title=$1,
         summary=$2,
         details=$3,
@@ -350,7 +350,7 @@ app.post("/api/admin/media", adminAuth, async (req, res) => {
       `INSERT INTO media_assets (kind, title, url, embed_code)
        VALUES ($1,$2,$3,$4)
        RETURNING *`,
-      [kind, title||null, url, embed_code||null]
+      [kind, title || null, url, embed_code || null]
     );
     res.status(201).json(rows[0]);
   } catch (e) {
@@ -379,7 +379,7 @@ app.post("/api/admin/resume", adminAuth, async (req, res) => {
       `INSERT INTO resume_items (title, org, description, start_year, end_year, order_index)
        VALUES ($1,$2,$3,$4,$5,$6)
        RETURNING *`,
-      [title, org||null, description||null, start_year||null, end_year||null, order_index||0]
+      [title, org || null, description || null, start_year || null, end_year || null, order_index || 0]
     );
     res.status(201).json(rows[0]);
   } catch (e) {
@@ -432,7 +432,7 @@ app.post("/api/admin/blog", adminAuth, async (req, res) => {
       `INSERT INTO blog_posts (title, slug, html, cover_image_url, video_embed_url, is_published, published_at)
        VALUES ($1,$2,$3,$4,$5,$6, CASE WHEN $6 THEN now() ELSE NULL END)
        RETURNING *`,
-      [title, slug, html, cover_image_url||null, video_embed_url||null, !!is_published]
+      [title, slug, html, cover_image_url || null, video_embed_url || null, !!is_published]
     );
     res.status(201).json(rows[0]);
   } catch (e) {
