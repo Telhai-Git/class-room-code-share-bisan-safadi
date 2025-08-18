@@ -122,28 +122,37 @@ export default function Projects() {
   }
 
   async function save() {
-    if (!title.trim()) return alert("Title is required");
-    const body = {
-      title: title.trim(),
-      summary: summary.trim(),
-      details: details.trim(),            // keep modern key
-      description: details.trim(),        // ✅ also send legacy key
-      image_url: imageUrl.trim(),
-      github_url: githubUrl.trim(),
-      youtube_url: youtubeUrl.trim(),
-      embed_code: embedCode.trim(),
-      tech_stack: techChips.join(", "),
-    };
-    // console.log("[SAVE payload]", body);
+  if (!title.trim()) return alert("Title is required");
 
-    if (editingId) {
-      await api(`/api/admin/projects/${editingId}`, { method: "PUT", body });
-    } else {
-      await api("/api/admin/projects", { method: "POST", body });
-    }
-    setOpen(false);
-    await load();
+  // take chips + whatever is still typed in the input
+  const extra = techInput
+    .split(",")
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  const mergedTechs = Array.from(new Set([...techChips, ...extra]));
+
+  const body = {
+    title: title.trim(),
+    summary: summary.trim(),
+    details: details.trim(),
+    description: details.trim(),
+    image_url: imageUrl.trim(),
+    github_url: githubUrl.trim(),
+    youtube_url: youtubeUrl.trim(),
+    embed_code: embedCode.trim(),
+    tech_stack: mergedTechs.join(", "),
+  };
+
+  if (editingId) {
+    await api(`/api/admin/projects/${editingId}`, { method: "PUT", body });
+  } else {
+    await api("/api/admin/projects", { method: "POST", body });
   }
+  setOpen(false);
+  await load();
+}
+
 
   async function removeRow(id) {
     if (!window.confirm("Delete this project?")) return;
@@ -419,13 +428,22 @@ export default function Projects() {
                 <Chip key={idx} label={chip} onDelete={() => removeChip(idx)} />
               ))}
             </Box>
-            <TextField
-              placeholder="Type a tech and press Enter (e.g., React)"
-              value={techInput}
-              onChange={e => setTechInput(e.target.value)}
-              onKeyDown={handleTechKey}
-              fullWidth
-            />
+           <TextField
+  placeholder="Type a tech and press Enter (e.g., React)"
+  value={techInput}
+  onChange={e => setTechInput(e.target.value)}
+  onKeyDown={handleTechKey}
+  onBlur={() => {
+    const v = techInput.trim();
+    if (!v) return;
+    v.split(",").map(s => s.trim()).filter(Boolean).forEach(s => {
+      setTechChips(prev => (prev.includes(s) ? prev : [...prev, s]));
+    });
+    setTechInput("");
+  }}
+  fullWidth
+/>
+
 
             {/* optional links */}
             <Accordion sx={{ mt: 1 }}>
