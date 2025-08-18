@@ -1,5 +1,6 @@
 // src/pages/Blog.jsx
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Box, Button, Dialog, DialogTitle, DialogContent, DialogActions,
   TextField, Table, TableHead, TableRow, TableCell, TableBody,
@@ -7,7 +8,9 @@ import {
 } from "@mui/material";
 import { api } from "../api";
 import { useApp } from "../context/AppContext";
+import "./Blog.css";
 
+/* ---------- helpers ---------- */
 function toSlug(s) {
   return (s || "")
     .toLowerCase()
@@ -16,13 +19,21 @@ function toSlug(s) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 }
+function stripHtml(html) {
+  return (html || "").replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+}
+function getExcerpt(html, maxLen = 180) {
+  const txt = stripHtml(html);
+  return txt.length <= maxLen ? txt : txt.slice(0, maxLen).trim() + "…";
+}
 
 export default function Blog() {
   const { token } = useApp();
   const isAdmin = !!token;
 
   const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true); // we only use setLoading to trigger spinner state
+  const [loadingNow, setLoadingNow] = useState(true); // actual loading flag for UI
   const [err, setErr] = useState("");
 
   const [open, setOpen] = useState(false);
@@ -36,24 +47,27 @@ export default function Blog() {
     is_published: false,
   });
 
+  /* ---------- load posts ---------- */
   async function load() {
     try {
       setErr("");
       setLoading(true);
+      setLoadingNow(true);
       const rows = isAdmin
-  ? await api("/api/admin/blog", { method: "GET", auth: true }) // 🔑 add auth: true
-  : await api("/api/blog", { method: "GET", auth: false });
+        ? await api("/api/admin/blog", { method: "GET", auth: true })
+        : await api("/api/blog", { method: "GET", auth: false });
       setItems(Array.isArray(rows) ? rows : []);
     } catch (e) {
       console.error(e);
       setErr("Failed to load blog posts.");
     } finally {
       setLoading(false);
+      setLoadingNow(false);
     }
   }
   useEffect(() => { load(); }, [isAdmin]);
 
-  // --------- Admin actions ----------
+  /* ---------- admin actions ---------- */
   function startCreate() {
     setEditingId(null);
     setForm({
@@ -81,7 +95,6 @@ export default function Blog() {
   }
 
   async function save() {
-    // minimal validation
     const title = form.title.trim();
     const slug = (form.slug.trim() || toSlug(title));
     const html = form.html.trim();
@@ -95,16 +108,16 @@ export default function Blog() {
       html,
       cover_image_url: form.cover_image_url.trim() || null,
       video_embed_url: form.video_embed_url.trim() || null,
-      is_published: !!form.is_published, // only used by POST create
+      is_published: !!form.is_published, // used by POST create
     };
 
     try {
       setErr("");
       if (editingId) {
-  await api(`/api/admin/blog/${editingId}`, { method: "PUT", body, auth: true }); // 🔑
-} else {
-  await api("/api/admin/blog", { method: "POST", body, auth: true }); // 🔑
-}
+        await api(`/api/admin/blog/${editingId}`, { method: "PUT", body, auth: true });
+      } else {
+        await api("/api/admin/blog", { method: "POST", body, auth: true });
+      }
       setOpen(false);
       await load();
     } catch (e) {
@@ -117,10 +130,10 @@ export default function Blog() {
     try {
       setErr("");
       await api(`/api/admin/blog/${row.id}/publish`, {
-  method: "PATCH",
-  body: { publish: !!publish },
-  auth: true, // 🔑
-});
+        method: "PATCH",
+        body: { publish: !!publish },
+        auth: true,
+      });
       await load();
     } catch (e) {
       console.error(e);
@@ -128,17 +141,26 @@ export default function Blog() {
     }
   }
 
-  const rowsForTable = useMemo(() => {
-    // Public already gets only published from /api/blog
-    // Admin sees all; sort newest first (already sorted by server, but keep safe)
-    return [...items];
-  }, [items]);
+  async function removePost(row) {
+    if (!window.confirm(`Delete post "${row.title}"? This cannot be undone.`)) return;
+    try {
+      setErr("");
+      await api(`/api/admin/blog/${row.id}`, { method: "DELETE", auth: true });
+      await load();
+    } catch (e) {
+      console.error(e);
+      setErr("Failed to delete the post.");
+    }
+  }
 
-  // --------- UI ----------
+  const rowsForTable = useMemo(() => [...items], [items]);
+
+  /* ---------- UI ---------- */
   return (
-    <Box sx={{ display: "grid", gap: 2 }}>
-      <Box sx={{ display: "flex", alignItems: "center" }}>
-        <h2 style={{ margin: 0 }}>Blog</h2>
+    <Box className="about-section fade-in" sx={{ p: { xs: 2, md: 4 } }}>
+      {/* Title + add */}
+      <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+        <h2 className="title-accent title-animate text-purple" style={{ margin: 0 }}>Blog</h2>
         {isAdmin && (
           <Box sx={{ ml: "auto" }}>
             <Button
@@ -156,72 +178,142 @@ export default function Blog() {
         )}
       </Box>
 
-      {err && <Alert severity="error">{err}</Alert>}
+      {err && <Alert severity="error" sx={{ mb: 2 }}>{err}</Alert>}
 
-      {loading ? (
+      {loadingNow ? (
         <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
           <CircularProgress />
         </Box>
-      ) : rowsForTable.length === 0 ? (
-        <Alert severity="info">No blog posts yet.</Alert>
       ) : (
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell>Title</TableCell>
-              <TableCell>Slug</TableCell>
-              <TableCell>Published</TableCell>
-              <TableCell>Dates</TableCell>
-              {isAdmin && <TableCell align="right">Actions</TableCell>}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {rowsForTable.map((row) => (
-              <TableRow key={row.id}>
-                <TableCell>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <span>{row.title}</span>
-                    {row.cover_image_url && <Chip size="small" label="Cover" />}
-                    {row.video_embed_url && <Chip size="small" label="Video" />}
-                  </Stack>
-                </TableCell>
-                <TableCell>{row.slug}</TableCell>
-                <TableCell>{row.is_published ? "Yes" : "No"}</TableCell>
-                <TableCell>
-                  <small style={{ color: "#6b6b6b" }}>
-                    created: {new Date(row.created_at).toLocaleString()}<br />
-                    {row.published_at ? `published: ${new Date(row.published_at).toLocaleString()}` : ""}
-                  </small>
-                </TableCell>
-
-                {isAdmin && (
-                  <TableCell align="right">
-                    <Button
-                      size="small"
-                      onClick={() => startEdit(row)}
-                      sx={{ mr: 1, textTransform: "none" }}
+        <>
+          {/* PUBLIC view: cards with thumbnail */}
+          {!isAdmin && (
+            <>
+              {rowsForTable.length === 0 ? (
+                <Alert severity="info">No blog posts yet.</Alert>
+              ) : (
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+                    gap: 2,
+                  }}
+                >
+                  {rowsForTable.map((row, i) => (
+                    <Box
+                      key={row.id}
+                      className="about-card blog-card card-animate"
+                      style={{ animationDelay: `${i * 0.08}s` }}
+                      sx={{ p: 0, borderRadius: 3, boxShadow: "0 8px 24px rgba(0,0,0,.06)" }}
                     >
-                      Edit
-                    </Button>
-                    <FormControlLabel
-                      sx={{ ml: 1 }}
-                      control={
-                        <Switch
-                          checked={!!row.is_published}
-                          onChange={(e) => publishToggle(row, e.target.checked)}
+                      {/* cover thumbnail */}
+                      {row.cover_image_url && (
+                        <div className="blog-thumb-wrap">
+                          <img
+                            src={row.cover_image_url}
+                            alt={row.title}
+                            className="blog-thumb"
+                            loading="lazy"
+                            onError={(e) => (e.currentTarget.style.display = "none")}
+                          />
+                        </div>
+                      )}
+
+                      <Box sx={{ display: "grid", gap: 1, p: 2 }}>
+                        <Box sx={{ display: "flex", alignItems: "baseline", gap: 1 }}>
+                          <h3 style={{ margin: 0 }}>{row.title}</h3>
+                          {row.is_published ? null : <Chip size="small" label="Draft" />}
+                        </Box>
+
+                        <div className="blog-meta">
+                          {row.published_at
+                            ? new Date(row.published_at).toLocaleDateString()
+                            : new Date(row.created_at).toLocaleDateString()}
+                        </div>
+
+                        <p style={{ margin: 0 }}>{getExcerpt(row.html, 180)}</p>
+
+                        <Box sx={{ mt: 1 }}>
+                          <Link className="blog-link" to={`/blog/${row.slug}`}>Read more →</Link>
+                        </Box>
+                      </Box>
+                    </Box>
+                  ))}
+                </Box>
+              )}
+            </>
+          )}
+
+          {/* ADMIN view: table with Edit/Delete/Publish */}
+          {isAdmin && (
+            rowsForTable.length === 0 ? (
+              <Alert severity="info">No blog posts yet.</Alert>
+            ) : (
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Title</TableCell>
+                    <TableCell>Slug</TableCell>
+                    <TableCell>Published</TableCell>
+                    <TableCell>Dates</TableCell>
+                    <TableCell align="right">Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {rowsForTable.map((row) => (
+                    <TableRow key={row.id}>
+                      <TableCell>
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <span>{row.title}</span>
+                          {row.cover_image_url && <Chip size="small" label="Cover" />}
+                          {row.video_embed_url && <Chip size="small" label="Video" />}
+                        </Stack>
+                      </TableCell>
+                      <TableCell>{row.slug}</TableCell>
+                      <TableCell>{row.is_published ? "Yes" : "No"}</TableCell>
+                      <TableCell>
+                        <small className="blog-meta">
+                          created: {new Date(row.created_at).toLocaleString()}<br />
+                          {row.published_at ? `published: ${new Date(row.published_at).toLocaleString()}` : ""}
+                        </small>
+                      </TableCell>
+                      <TableCell align="right">
+                        <Button
+                          size="small"
+                          onClick={() => startEdit(row)}
+                          sx={{ mr: 1, textTransform: "none" }}
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          size="small"
+                          color="error"
+                          onClick={() => removePost(row)}
+                          sx={{ mr: 1, textTransform: "none" }}
+                        >
+                          Delete
+                        </Button>
+                        <FormControlLabel
+                          sx={{ ml: 1 }}
+                          control={
+                            <Switch
+                              checked={!!row.is_published}
+                              onChange={(e) => publishToggle(row, e.target.checked)}
+                            />
+                          }
+                          label="Publish"
                         />
-                      }
-                      label="Publish"
-                    />
-                  </TableCell>
-                )}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )
+          )}
+        </>
       )}
 
-      {/* Admin dialog */}
+      {/* ---------- Admin dialog ---------- */}
       {isAdmin && (
         <Dialog open={open} onClose={() => setOpen(false)} maxWidth="md" fullWidth>
           <DialogTitle className="text-purple">
@@ -235,7 +327,6 @@ export default function Blog() {
                 setForm((f) => ({
                   ...f,
                   title: e.target.value,
-                  // if slug is empty or equal to previous auto, keep it auto-updated
                   slug: f.slug ? f.slug : toSlug(e.target.value),
                 }))
               }

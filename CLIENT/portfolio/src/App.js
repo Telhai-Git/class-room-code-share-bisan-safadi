@@ -21,6 +21,7 @@ import Projects from "./pages/Projects.jsx";
 import Contact from "./pages/Contact.jsx";
 import CV from "./pages/CV.jsx";
 import Blog from "./pages/Blog.jsx";
+import BlogPost from "./pages/BlogPost.jsx";
 import Login from "./pages/Login.jsx";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminDashboard from "./pages/AdminDashboard.jsx";
@@ -50,6 +51,7 @@ function App() {
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/cv" element={<CV />} />
                 <Route path="/blog" element={<Blog />} />
+                <Route path="/blog/:slug" element={<BlogPost />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/admin" element={<ProtectedRoute />}>
   <Route index element={<AdminDashboard />} />
