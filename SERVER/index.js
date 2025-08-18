@@ -441,6 +441,41 @@ app.post("/api/admin/blog", adminAuth, async (req, res) => {
   }
 });
 
+// -------- Public Blog (read-only) --------
+app.get("/api/blog", async (_req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, title, slug, html, cover_image_url, video_embed_url,
+              is_published, created_at, updated_at, published_at
+       FROM blog_posts
+       WHERE is_published = true
+       ORDER BY COALESCE(published_at, created_at) DESC`
+    );
+    res.json(rows);
+  } catch (e) {
+    console.error("GET /api/blog", e);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+app.get("/api/blog/:slug", async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const { rows } = await pool.query(
+      `SELECT id, title, slug, html, cover_image_url, video_embed_url,
+              is_published, created_at, updated_at, published_at
+       FROM blog_posts
+       WHERE slug = $1 AND is_published = true
+       LIMIT 1`,
+      [slug]
+    );
+    if (!rows.length) return res.status(404).json({ message: "Not found" });
+    res.json(rows[0]);
+  } catch (e) {
+    console.error("GET /api/blog/:slug", e);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 app.put("/api/admin/blog/:id", adminAuth, async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
@@ -461,6 +496,42 @@ app.put("/api/admin/blog/:id", adminAuth, async (req, res) => {
   } catch (e) {
     console.error("[admin blog update]", e);
     res.status(500).json({ message: "Failed to update post" });
+  }
+});
+
+
+// -------- Admin Blog (list all) --------
+app.get("/api/admin/blog", adminAuth, async (_req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, title, slug, html, cover_image_url, video_embed_url,
+              is_published, created_at, updated_at, published_at
+       FROM blog_posts
+       ORDER BY created_at DESC`
+    );
+    res.json(rows);
+  } catch (e) {
+    console.error("GET /api/admin/blog", e);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+app.get("/api/admin/blog/:id", adminAuth, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const { rows } = await pool.query(
+      `SELECT id, title, slug, html, cover_image_url, video_embed_url,
+              is_published, created_at, updated_at, published_at
+       FROM blog_posts
+       WHERE id = $1
+       LIMIT 1`,
+      [id]
+    );
+    if (!rows.length) return res.status(404).json({ message: "Not found" });
+    res.json(rows[0]);
+  } catch (e) {
+    console.error("GET /api/admin/blog/:id", e);
+    res.status(500).json({ message: "Server error" });
   }
 });
 
