@@ -1,12 +1,9 @@
-// src/pages/About.jsx
 import React, { useEffect, useMemo, useState } from "react";
-import { Container, Row, Col, Card, Button, Badge, ProgressBar, OverlayTrigger, Tooltip } from "react-bootstrap";
+import {
+  Container, Row, Col, Card, Button, Badge, ProgressBar, OverlayTrigger, Tooltip
+} from "react-bootstrap";
+import { API_BASE } from "../api";
 import "./About.css";
-
-const API_BASE =
-  (import.meta?.env?.VITE_API_BASE) ||
-  (process.env.REACT_APP_API_BASE) ||
-  "http://localhost:3001";
 
 const teamMembers = [
   {
@@ -63,7 +60,9 @@ function ExperienceList({ items }) {
     <div className="mt-3 text-start">
       {items.map((e) => (
         <div key={`${e.org}-${e.title}-${e.order_index}`} className="mb-3">
-          <div className="fw-semibold">{e.title} — <span className="text-purple">{e.org}</span></div>
+          <div className="fw-semibold">
+            {e.title} — <span className="text-purple">{e.org}</span>
+          </div>
           <div className="text-muted small">
             {e.start_year || "—"}{e.end_year ? `–${e.end_year}` : "–Present"}
           </div>
@@ -76,16 +75,19 @@ function ExperienceList({ items }) {
 
 export default function About() {
   const [images, setImages] = useState([]);
-  const [exp, setExp] = useState({});     // { memberKey: Experience[] }
-  const [skills, setSkills] = useState({}); // { memberKey: Skill[] }
+  const [exp, setExp] = useState({});      // { bisan: Experience[], awsam: Experience[] }
+  const [skills, setSkills] = useState({}); // { bisan: Skill[], awsam: Skill[] }
   const [openExp, setOpenExp] = useState({});
   const [openSkills, setOpenSkills] = useState({});
 
   useEffect(() => {
-    // Photos metadata
-    fetch(`${API_BASE}/api/images-blob`).then(r => r.json()).then(setImages).catch(console.error);
+    // Photos
+    fetch(`${API_BASE}/api/images-blob`)
+      .then(r => r.json())
+      .then(setImages)
+      .catch(console.error);
 
-    // Load both members’ data in parallel
+    // Experience + skills for both members
     Promise.all([
       fetch(`${API_BASE}/api/about/experiences?member=bisan`).then(r => r.json()),
       fetch(`${API_BASE}/api/about/experiences?member=awsam`).then(r => r.json()),
@@ -99,7 +101,7 @@ export default function About() {
       .catch(console.error);
   }, []);
 
-  // DB photos: title(lowercase) -> row
+  // DB photos by title (lowercase)
   const dbByTitle = useMemo(() => {
     const m = new Map();
     for (const img of images) if (img?.title) m.set(img.title.toLowerCase(), img);
@@ -107,7 +109,7 @@ export default function About() {
   }, [images]);
 
   const photoSrc = (member) => {
-    const titleKey = member.name.split(" ")[0].toLowerCase(); // "Bisan" | "Awsam"
+    const titleKey = member.name.split(" ")[0].toLowerCase(); // "bisan" | "awsam"
     const hit = dbByTitle.get(titleKey);
     return hit ? `${API_BASE}/api/images-blob/${hit.id}` : member.fallbackImage;
   };
@@ -128,7 +130,7 @@ export default function About() {
           const memberKey = member.key;
           const memberSkills = skills[memberKey] || [];
           const spotlight = memberSkills.filter(s => s.spotlight);
-          const levelItems = memberSkills; // all with levels
+          const levelItems = memberSkills;
 
           return (
             <Col key={memberKey} md={5} lg={4} className="mb-4">
@@ -165,7 +167,7 @@ export default function About() {
                     )}
                   </div>
 
-                  {/* Spotlight skills (chips from DB) */}
+                  {/* Spotlight skills from DB */}
                   <SkillChips items={spotlight} />
 
                   {/* Toggles */}

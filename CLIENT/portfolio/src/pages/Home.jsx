@@ -1,11 +1,7 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Container, Row, Col, Card } from "react-bootstrap";
+import { API_BASE } from "../api";
 import "./Home.css";
-
-const API_BASE =
-    (import.meta?.env?.VITE_API_BASE) ||
-    (process.env.REACT_APP_API_BASE) ||
-    "http://localhost:3001";
 
 export default function Home() {
     const [images, setImages] = useState([]);
@@ -17,12 +13,11 @@ export default function Home() {
             .catch(console.error);
     }, []);
 
+    // Map: title (lowercase) -> image row
     const byTitle = useMemo(() => {
-        const map = new Map();
-        for (const img of images) {
-            if (img?.title) map.set(img.title.toLowerCase(), img);
-        }
-        return map;
+        const m = new Map();
+        for (const img of images) if (img?.title) m.set(img.title.toLowerCase(), img);
+        return m;
     }, [images]);
 
     const srcFor = (title, fallback) => {
@@ -32,12 +27,14 @@ export default function Home() {
 
     return (
         <Container className="py-5">
+            {/* Welcome Title */}
             <div className="text-center">
                 <h1 className="mb-4 text-purple display-4 title-accent title-animate">
                     Welcome to Our Portfolio
                 </h1>
             </div>
 
+            {/* Subtitle Paragraphs Centered */}
             <div className="text-center">
                 <p className="lead text-muted">
                     Two curious minds, one shared journey — building, learning, and evolving through every fullstack challenge.
@@ -51,27 +48,38 @@ export default function Home() {
                 </p>
             </div>
 
+            {/* Team Cards */}
             <Row className="mt-5 justify-content-center">
+                {/* Bisan Card */}
                 <Col xs={12} md={6} lg={4} className="mb-4">
                     <Card className="team-card shadow-sm border-0 card-animate">
-                        <Card.Img variant="top"
+                        <Card.Img
+                            variant="top"
                             src={srcFor("Bisan", "/images/bisan.jpg")}
-                            className="team-img" />
+                            className="team-img"
+                        />
                         <Card.Body>
                             <Card.Title className="text-purple">Bisan</Card.Title>
-                            <Card.Text>“I enjoy creating elegant frontends and working in teams.”</Card.Text>
+                            <Card.Text>
+                                “I enjoy creating elegant frontends and working in teams.”
+                            </Card.Text>
                         </Card.Body>
                     </Card>
                 </Col>
 
+                {/* Awsam Card */}
                 <Col xs={12} md={6} lg={4} className="mb-4">
                     <Card className="team-card shadow-sm border-0 card-animate">
-                        <Card.Img variant="top"
+                        <Card.Img
+                            variant="top"
                             src={srcFor("Awsam", "/images/awsam.jpg")}
-                            className="team-img" />
+                            className="team-img"
+                        />
                         <Card.Body>
                             <Card.Title className="text-purple">Awsam</Card.Title>
-                            <Card.Text>“I focus on backend systems and solving logic problems.”</Card.Text>
+                            <Card.Text>
+                                “I focus on backend systems and solving logic problems.”
+                            </Card.Text>
                         </Card.Body>
                     </Card>
                 </Col>

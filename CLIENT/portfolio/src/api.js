@@ -1,19 +1,20 @@
 // src/api.js
 const PROD_BASE = "https://awsam-ibraheem-bisan-safadi-portfolio.onrender.com";
 
-// Auto-pick base: localhost when developing, Render when deployed
-const API_BASE =
+// Auto-pick base: localhost in dev, Render in prod
+export const API_BASE =
   (typeof window !== "undefined" && window.location.hostname === "localhost")
     ? "http://localhost:3001"
     : PROD_BASE;
 
-// Safer join
-function join(base, path) {
-  const b = base.replace(/\/+$/, "");
+// Safe URL join
+export function join(base, path) {
+  const b = String(base || "").replace(/\/+$/, "");
   const p = String(path || "").replace(/^\/+/, "");
   return `${b}/${p}`;
 }
 
+// JSON fetch helper (keeps your auth logic)
 export async function api(path, { method = "GET", body, auth = true, headers: extraHeaders } = {}) {
   const headers = { "Content-Type": "application/json", ...(extraHeaders || {}) };
 
@@ -36,7 +37,7 @@ export async function api(path, { method = "GET", body, auth = true, headers: ex
 
   const text = await res.text();
   let data = null;
-  try { data = text ? JSON.parse(text) : null; } catch {}
+  try { data = text ? JSON.parse(text) : null; } catch { }
 
   if (!res.ok) {
     console.error("[api] error", res.status, text || data);
@@ -44,3 +45,9 @@ export async function api(path, { method = "GET", body, auth = true, headers: ex
   }
   return data;
 }
+
+// Optional helpers if you want them:
+export const endpoints = {
+  imagesList: () => api("/api/images-blob", { auth: false }),
+  imageSrc: (id) => join(API_BASE, `/api/images-blob/${id}`),
+};
