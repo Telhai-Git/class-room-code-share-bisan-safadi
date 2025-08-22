@@ -16,6 +16,22 @@ console.log("[BOOT] Reviews route mounted");
 app.use(cors());
 app.use(express.json());
 
+//images 
+
+const multer = require("multer");
+
+// Multer in-memory storage for BYTEA
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  fileFilter: (req, file, cb) => {
+    const ok = ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.mimetype);
+    cb(ok ? null : new Error("Unsupported image type"), ok);
+  }
+});
+
+
+
 // -------- Projects --------
 // Public list
 app.get("/api/projects", async (_req, res) => {
@@ -632,6 +648,192 @@ app.delete("/api/admin/contact/:id", adminAuth, async (req, res) => {
     res.status(500).json({ message: "Failed to delete message" });
   }
 });
+
+
+
+// -------- Images (BYTEA) --------
+
+// Upload one image as BYTEA
+app.post("/api/images-blob", upload.single("image"), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+    const title = (req.body?.title || req.file.originalname || "untitled").trim();
+    const data = req.file.buffer;
+    const mime = req.file.mimetype;
+    const bytes = req.file.size;
+
+    const { rows } = await pool.query(
+      `INSERT INTO images_blob (title, data, mime, bytes)
+       VALUES ($1,$2,$3,$4)
+       RETURNING id, title, mime, bytes, created_at`,
+      [title, data, mime, bytes]
+    );
+    res.status(201).json(rows[0]);
+  } catch (e) {
+    console.error("POST /api/images-blob", e);
+    res.status(500).json({ message: "Upload failed" });
+  }
+});
+
+// List (metadata only)
+app.get("/api/images-blob", async (_req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, title, mime, bytes, created_at
+       FROM images_blob
+       ORDER BY created_at DESC
+       LIMIT 200`
+    );
+    res.json(rows);
+  } catch (e) {
+    console.error("GET /api/images-blob", e);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Serve bytes by id (usable directly as <img src=...>)
+app.get("/api/images-blob/:id", async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT data, mime FROM images_blob WHERE id=$1`,
+      [req.params.id]
+    );
+    if (!rows.length) return res.sendStatus(404);
+    res.setHeader("Content-Type", rows[0].mime);
+    res.setHeader("Cache-Control", "public, max-age=86400, immutable");
+    res.send(rows[0].data);
+  } catch (e) {
+    console.error("GET /api/images-blob/:id", e);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
+/* -------------------- ABOUT: schema & seed -------------------- */
+async function ensureAboutSchema() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS about_experiences (
+        id SERIAL PRIMARY KEY,
+        member_key TEXT NOT NULL,
+        org TEXT NOT NULL,
+        title TEXT NOT NULL,
+        start_year INT,
+        end_year INT,
+        description TEXT,
+        order_index INT NOT NULL DEFAULT 0,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE INDEX IF NOT EXISTS idx_about_experiences_member_order
+        ON about_experiences(member_key, order_index);
+
+      CREATE TABLE IF NOT EXISTS about_skills (
+        id SERIAL PRIMARY KEY,
+        member_key TEXT NOT NULL,
+        name TEXT NOT NULL,
+        level INT NOT NULL CHECK (level BETWEEN 0 AND 100),
+        spotlight BOOLEAN NOT NULL DEFAULT false,
+        order_index INT NOT NULL DEFAULT 0,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS uq_about_skills_member_name
+        ON about_skills(member_key, name);
+    `);
+
+    // Seed defaults if empty:
+    const { rows: c1 } = await pool.query(`SELECT count(*)::int AS n FROM about_experiences`);
+    const { rows: c2 } = await pool.query(`SELECT count(*)::int AS n FROM about_skills`);
+
+    if (c1[0].n === 0 || c2[0].n === 0) {
+      await pool.query(`
+        -- same seed as in the SQL block; safe to keep here too
+        DO $$
+        BEGIN
+          IF NOT EXISTS (SELECT 1 FROM about_experiences WHERE member_key='bisan') THEN
+            INSERT INTO about_experiences (member_key, org, title, start_year, end_year, description, order_index) VALUES
+            ('bisan','Student Projects','Fullstack Developer',2024,NULL,'Building modern UIs and fullstack features with React, Node and PostgreSQL.',10),
+            ('bisan','Team Collaboration','Frontend Lead',2024,NULL,'Focused on clean UI, accessibility and component design.',20);
+          END IF;
+
+          IF NOT EXISTS (SELECT 1 FROM about_experiences WHERE member_key='awsam') THEN
+            INSERT INTO about_experiences (member_key, org, title, start_year, end_year, description, order_index) VALUES
+            ('awsam','Student Projects','Backend Developer',2024,NULL,'Designing APIs, data models and integrations for fullstack apps.',10),
+            ('awsam','Problem Solving','Systems & Logic',2024,NULL,'Ownership on server logic, validations and performance.',20);
+          END IF;
+
+          IF NOT EXISTS (SELECT 1 FROM about_skills WHERE member_key='bisan') THEN
+            INSERT INTO about_skills (member_key, name, level, spotlight, order_index) VALUES
+            ('bisan','React',88,true,10),
+            ('bisan','Bootstrap',90,true,20),
+            ('bisan','Node.js/Express',80,true,30),
+            ('bisan','PostgreSQL',78,true,40),
+            ('bisan','REST APIs',82,true,50),
+            ('bisan','JavaScript (ES6+)',85,false,60),
+            ('bisan','HTML/CSS',90,false,70),
+            ('bisan','Git/GitHub',86,false,80);
+          END IF;
+
+          IF NOT EXISTS (SELECT 1 FROM about_skills WHERE member_key='awsam') THEN
+            INSERT INTO about_skills (member_key, name, level, spotlight, order_index) VALUES
+            ('awsam','Node.js/Express',90,true,10),
+            ('awsam','PostgreSQL',84,true,20),
+            ('awsam','API Design',88,true,30),
+            ('awsam','React',75,true,40),
+            ('awsam','Docker',70,true,50),
+            ('awsam','Git/GitHub',85,false,60);
+          END IF;
+        END $$;
+      `);
+      console.log("[SCHEMA] About tables seeded.");
+    } else {
+      console.log("[SCHEMA] About tables exist (no seed).");
+    }
+  } catch (e) {
+    console.error("[SCHEMA ABOUT ERROR]", e);
+  }
+}
+ensureAboutSchema();
+
+
+
+/* -------------------- ABOUT: public read APIs -------------------- */
+app.get("/api/about/experiences", async (req, res) => {
+  try {
+    const member = String(req.query.member || "").toLowerCase();
+    if (!member) return res.status(400).json({ message: "member is required (e.g., bisan, awsam)" });
+    const { rows } = await pool.query(
+      `SELECT id, org, title, start_year, end_year, description, order_index
+       FROM about_experiences
+       WHERE member_key = $1
+       ORDER BY order_index, id`,
+      [member]
+    );
+    res.json(rows);
+  } catch (e) {
+    console.error("[about experiences]", e);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+app.get("/api/about/skills", async (req, res) => {
+  try {
+    const member = String(req.query.member || "").toLowerCase();
+    if (!member) return res.status(400).json({ message: "member is required (e.g., bisan, awsam)" });
+    const { rows } = await pool.query(
+      `SELECT id, name, level, spotlight, order_index
+       FROM about_skills
+       WHERE member_key = $1
+       ORDER BY order_index, name`,
+      [member]
+    );
+    res.json(rows);
+  } catch (e) {
+    console.error("[about skills]", e);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
 
 /* -------------------- Health & debug (unchanged) -------------------- */
 app.get("/", (_req, res) => res.send("API up"));
