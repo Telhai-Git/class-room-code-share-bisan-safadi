@@ -30,6 +30,15 @@ const upload = multer({
   }
 });
 
+// PDF uploader (CV)
+const uploadPdf = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 15 * 1024 * 1024 }, // 15MB
+  fileFilter: (req, file, cb) => {
+    const ok = file.mimetype === "application/pdf";
+    cb(ok ? null : new Error("Only PDF files are allowed"), ok);
+  }
+});
 
 
 // -------- Projects --------
@@ -830,6 +839,150 @@ app.get("/api/about/skills", async (req, res) => {
   } catch (e) {
     console.error("[about skills]", e);
     res.status(500).json({ message: "Server error" });
+  }
+});
+
+// POST /api/cv  (member: awsam|bisan; file: pdf)
+app.post("/api/cv", uploadPdf.single("file"), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+    const member = String(req.body?.member || "").toLowerCase().trim();
+    if (!["awsam", "bisan"].includes(member)) return res.status(400).json({ message: "member must be 'awsam' or 'bisan'" });
+
+    const { buffer: data, mimetype: mime } = req.file;
+
+    // ✅ UPSERT replaces existing row for that member
+    const { rows } = await pool.query(
+      `INSERT INTO cv_documents (member, data, mime, updated_at)
+       VALUES ($1, $2, $3, now())
+       ON CONFLICT (member)
+       DO UPDATE SET
+         data = EXCLUDED.data,
+         mime = EXCLUDED.mime,
+         updated_at = now()
+       RETURNING id, member, updated_at`,
+      [member, data, mime]
+    );
+
+    res.status(201).json(rows[0]);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: "Upload failed" });
+  }
+});
+
+
+app.get("/api/cv", async (req, res) => {
+  const member = (req.query.member || "").toString().toLowerCase();
+  const q = (member === "awsam" || member === "bisan")
+    ? { sql: `SELECT id,member,created_at FROM cv_documents WHERE member=$1 ORDER BY created_at DESC`, args: [member] }
+    : { sql: `SELECT id,member,created_at FROM cv_documents ORDER BY created_at DESC`, args: [] };
+  const { rows } = await pool.query(q.sql, q.args);
+  res.json(rows);
+});
+
+app.get("/api/cv/latest", async (req, res) => {
+  const member = String(req.query.member || "").toLowerCase().trim();
+  if (!["awsam", "bisan"].includes(member)) {
+    return res.status(400).json({ message: "member is required ('awsam' or 'bisan')" });
+  }
+  const { rows } = await pool.query(
+    `SELECT member, data, mime FROM cv_documents WHERE member = $1 LIMIT 1`,
+    [member]
+  );
+  if (!rows.length) return res.sendStatus(404);
+
+  const r = rows[0];
+  const download = String(req.query.download || "") === "1";
+  const filename = `${member}-cv.pdf`;
+
+  res.setHeader("Content-Type", r.mime || "application/pdf");
+  res.setHeader(
+    "Content-Disposition",
+    download ? `attachment; filename="${filename}"` : `inline; filename="${filename}"`
+  );
+  res.send(r.data);
+});
+
+
+app.get("/api/cv/:id", async (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  const { rows } = await pool.query(`SELECT member,data,mime FROM cv_documents WHERE id=$1`, [id]);
+  if (!rows.length) return res.sendStatus(404);
+  const r = rows[0], download = String(req.query.download || "") === "1";
+  const filename = `${r.member || "cv"}.pdf`;
+  res.setHeader("Content-Type", r.mime || "application/pdf");
+  res.setHeader("Content-Disposition", download ? `attachment; filename="${filename}"` : `inline; filename="${filename}"`);
+  res.send(r.data);
+});
+
+// ================== ADMIN: CV PDFs (protected) ==================
+app.post("/api/admin/cv", adminAuth, uploadPdf.single("file"), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ message: "No file uploaded" });
+    const member = String(req.body?.member || "").toLowerCase().trim();
+    if (!["awsam", "bisan"].includes(member)) {
+      return res.status(400).json({ message: "member must be 'awsam' or 'bisan'" });
+    }
+    const { buffer: data, mimetype: mime } = req.file;
+
+    // ✅ UPSERT (replace existing)
+    const { rows } = await pool.query(
+      `INSERT INTO cv_documents (member, data, mime, updated_at)
+       VALUES ($1, $2, $3, now())
+       ON CONFLICT (member)
+       DO UPDATE SET
+         data = EXCLUDED.data,
+         mime = EXCLUDED.mime,
+         updated_at = now()
+       RETURNING id, member, updated_at`,
+      [member, data, mime]
+    );
+
+    res.status(201).json(rows[0]);
+  } catch (e) {
+    console.error("[admin cv upload]", e);
+    res.status(500).json({ message: "Upload failed" });
+  }
+});
+
+
+
+app.get("/api/admin/cv", adminAuth, async (req, res) => {
+  try {
+    const member = (req.query.member || "").toString().toLowerCase();
+    let rows;
+    if (member === "awsam" || member === "bisan") {
+      ({ rows } = await pool.query(
+        `SELECT id, member, created_at
+         FROM cv_documents
+         WHERE member = $1
+         ORDER BY created_at DESC`,
+        [member]
+      ));
+    } else {
+      ({ rows } = await pool.query(
+        `SELECT id, member, created_at
+         FROM cv_documents
+         ORDER BY created_at DESC`
+      ));
+    }
+    res.json(rows);
+  } catch (e) {
+    console.error("[admin cv list]", e);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+app.delete("/api/admin/cv/:id", adminAuth, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const { rowCount } = await pool.query(`DELETE FROM cv_documents WHERE id=$1`, [id]);
+    if (!rowCount) return res.status(404).json({ message: "Not found" });
+    res.json({ ok: true });
+  } catch (e) {
+    console.error("[admin cv delete]", e);
+    res.status(500).json({ message: "Failed to delete CV" });
   }
 });
 
