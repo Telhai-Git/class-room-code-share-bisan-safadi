@@ -1,10 +1,87 @@
-/* src/pages/CV.css */
-.cv-card { transition: transform .2s ease, box-shadow .2s ease; }
-.cv-card:hover { transform: translateY(-4px); box-shadow: 0 .75rem 1.5rem rgba(0,0,0,.10); }
-.text-purple { color: #6f42c1; }
-.btn-purple { background-color:#6f42c1; border-color:#6f42c1; }
+/* Keep your existing styles above… */
+
+.cv-upload__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: .9rem 1.1rem;
+  background: linear-gradient(135deg, #f5effb, #efe6f8);
+  border-top-left-radius: .8rem;
+  border-top-right-radius: .8rem;
+  border-bottom: 1px solid rgba(111,66,193,.12);
+  color: #512c96;
+}
+
+.cv-upload h5 { color: #512c96; }
+
+/* Dropzone */
+.cv-dropzone {
+  border: 2px dashed rgba(111,66,193,.35);
+  border-radius: 14px;
+  padding: 18px;
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color .2s ease, background-color .2s ease, box-shadow .2s ease;
+  cursor: pointer;
+  background: linear-gradient(0deg, rgba(111,66,193,.03), rgba(111,66,193,.03));
+}
+
+.cv-dropzone:hover {
+  border-color: rgba(111,66,193,.65);
+  box-shadow: 0 6px 20px rgba(111,66,193,.10);
+}
+
+.cv-dropzone.is-drag {
+  background-color: rgba(111,66,193,.06);
+  border-color: #6f42c1;
+}
+
+.cv-dropzone__circle {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(111,66,193,.10);
+  color: #6f42c1;
+}
+
+/* Buttons */
+.btn-purple {
+  background-color:#6f42c1;
+  border-color:#6f42c1;
+}
 .btn-purple:hover { filter: brightness(0.95); }
+
+/* Title centering (you already had this) */
 h1.title-accent {
   text-align: center !important;
   width: 100%;
 }
+.title-accent {
+  position: relative;
+  display: inline-block;
+  padding-bottom: 8px;
+}
+
+.title-accent::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 0;
+  height: 3px;
+  width: 50%;          /* underline takes 50% of the text width */
+  background-color: #6f42c1;
+  border-radius: 2px;
+  animation: glow 2s infinite ease-in-out;
+}
+
+@keyframes glow {
+  0% { opacity: .4; }
+  50% { opacity: 1; }
+  100% { opacity: .4; }
+}
+

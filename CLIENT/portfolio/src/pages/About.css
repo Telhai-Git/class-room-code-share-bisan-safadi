@@ -18,19 +18,31 @@
 .title-animate { animation: fadeSlideUp 1s ease-out; }
 @keyframes fadeSlideUp { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 1; transform: translateY(0); } }
 
-.title-accent { position: relative; display: inline-block; padding-bottom: 8px; }
+.title-accent {
+  position: relative;
+  display: inline-block;
+  padding-bottom: 8px;
+}
+
 .title-accent::after {
   content: "";
   position: absolute;
-  width: 50%;
-  height: 3px;
-  background-color: #6f42c1;
-  left: 25%;
+  left: 50%;
+  transform: translateX(-50%);
   bottom: 0;
+  height: 3px;
+  width: 50%;          /* underline takes 50% of the text width */
+  background-color: #6f42c1;
   border-radius: 2px;
   animation: glow 2s infinite ease-in-out;
 }
-@keyframes glow { 0% { opacity: .4; } 50% { opacity: 1; } 100% { opacity: .4; } }
+
+@keyframes glow {
+  0% { opacity: .4; }
+  50% { opacity: 1; }
+  100% { opacity: .4; }
+}
+
 
 /* Card polish */
 .about-card { border-radius: 18px; overflow: hidden; }

@@ -6,7 +6,7 @@ import "./Contact.css";
 
 export default function Contact() {
   // admin token (if logged in)
-  const { token } = useApp();           // expects AppContext to provide { token }
+  const { token } = useApp();
   const isAdmin = !!token;
 
   // ---- Form state ----
@@ -14,8 +14,8 @@ export default function Contact() {
     name: "",
     email: "",
     message: "",
-    website: "",  // honeypot
-    rating: 0,    // 1..5
+    website: "", // honeypot
+    rating: 0,   // 1..5
   });
 
   const [loading, setLoading] = useState(false);
@@ -31,7 +31,6 @@ export default function Contact() {
   // deleting state (for per-card spinner)
   const [deletingId, setDeletingId] = useState(null);
 
-  // If you later add Vite env var, this will use it automatically
   const API_BASE =
     (typeof import.meta !== "undefined" &&
       import.meta.env &&
@@ -47,13 +46,7 @@ export default function Contact() {
   const isValidEmail = (email) =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((email || "").trim());
 
-  const Stars = ({ n }) => (
-    <>
-      {[1, 2, 3, 4, 5].map((i) => (
-        <i key={i} className={`bi ${i <= n ? "bi-star-fill" : "bi-star"} me-1`} />
-      ))}
-    </>
-  );
+  
 
   // ---- Reviews fetch ----
   const fetchReviews = async () => {
@@ -84,7 +77,6 @@ export default function Contact() {
     setSuccessMsg("");
     setErrorMsg("");
 
-    // basic validation
     if (!form.name.trim() || !form.email.trim() || !form.message.trim()) {
       setErrorMsg("Please fill in all required fields.");
       return;
@@ -93,13 +85,11 @@ export default function Contact() {
       setErrorMsg("Please enter a valid email address.");
       return;
     }
-    // rating required 1..5 (server expects it)
     if (!Number.isInteger(form.rating) || form.rating < 1 || form.rating > 5) {
       setErrorMsg("Please select a star rating (1–5).");
       return;
     }
 
-    // honeypot: if filled, pretend success and bail
     if (form.website) {
       setSuccessMsg("Thanks! Your message was sent successfully.");
       setForm({ name: "", email: "", message: "", website: "", rating: 0 });
@@ -115,7 +105,7 @@ export default function Contact() {
           name: form.name.trim(),
           email: form.email.trim(),
           message: form.message.trim(),
-          rating: form.rating, // send rating
+          rating: form.rating,
         }),
       });
 
@@ -129,7 +119,6 @@ export default function Contact() {
             : "Thanks! Your message was sent successfully."
         );
         setForm({ name: "", email: "", message: "", website: "", rating: 0 });
-        // refresh the reviews list so the new message appears
         fetchReviews();
       } else {
         setErrorMsg(
@@ -146,7 +135,7 @@ export default function Contact() {
     }
   };
 
-  // ---- Admin: Delete a contact message ----
+  // ---- Admin delete ----
   const handleDeleteReview = async (id) => {
     if (!isAdmin || !token) return;
     const ok = window.confirm("Delete this message permanently?");
@@ -165,7 +154,6 @@ export default function Contact() {
           (typeof payload === "string" ? payload : "Failed to delete")
         );
       }
-      // refresh list after delete
       fetchReviews();
     } catch (e) {
       alert(`Delete failed: ${e.message || e}`);
@@ -188,7 +176,7 @@ export default function Contact() {
       </Row>
 
       <Row className="g-4 justify-content-center">
-        {/* Info Card */}
+        {/* Info Card (Get in touch) */}
         <Col md={5} lg={4}>
           <Card className="shadow-sm contact-card h-100">
             <Card.Body>
@@ -214,34 +202,14 @@ export default function Contact() {
                 </li>
                 <li className="d-flex align-items-start gap-2 mb-2">
                   <i className="bi bi-geo-alt fs-5 text-purple" />
-                  <span>Tel Hai / North District, Israel</span>
+                  <span>Majdal Shams / North District, Israel</span>
                 </li>
                 <li className="d-flex align-items-start gap-2 mb-2">
                   <i className="bi bi-clock fs-5 text-purple" />
                   <span>Usually replies within 24 hours</span>
                 </li>
               </ul>
-              <div className="d-flex gap-3">
-                <a
-                  className="social-link"
-                  href="https://github.com/yourusername"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <i className="bi bi-github fs-4" />
-                </a>
-                <a
-                  className="social-link"
-                  href="https://www.linkedin.com/in/yourusername"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <i className="bi bi-linkedin fs-4" />
-                </a>
-                <a className="social-link" href="mailto:Awsam1021@gmail.com">
-                  <i className="bi bi-envelope-open fs-4" />
-                </a>
-              </div>
+              {/* Removed GitHub/LinkedIn/Mail icon row here */}
             </Card.Body>
           </Card>
         </Col>
@@ -256,7 +224,6 @@ export default function Contact() {
               {errorMsg && <Alert variant="danger" className="mb-3">{errorMsg}</Alert>}
 
               <Form onSubmit={handleSubmit} noValidate>
-                {/* Honeypot field */}
                 <Form.Control
                   type="text"
                   name="website"
@@ -303,7 +270,6 @@ export default function Contact() {
                   />
                 </Form.Group>
 
-                {/* Rating */}
                 <Form.Group className="mb-3">
                   <Form.Label>Rating</Form.Label>
                   <div>
@@ -337,76 +303,113 @@ export default function Contact() {
           </Card>
         </Col>
       </Row>
+      {/* ===== Reviews Panel (design-only) ===== */}
+<Row className="mt-5">
+  <Col>
+    <div className="d-flex align-items-center justify-content-between mb-3">
+      <h2 className="mb-0 title-accent text-purple">Recent Reviews</h2>
 
-      {/* ===== Reviews Panel ===== */}
-      <Row className="mt-4">
-        <Col>
-          <h2 className="mb-3">Recent Reviews</h2>
+      <div className="d-flex align-items-center gap-2">
+        <span className="text-secondary small">Filter</span>
+        <Form.Select
+          value={minRating}
+          onChange={(e) => setMinRating(parseInt(e.target.value, 10))}
+          className="reviews-filter"
+          aria-label="Filter reviews by minimum rating"
+        >
+          <option value={1}>All (1–5)</option>
+          <option value={2}>2–5</option>
+          <option value={3}>3–5</option>
+          <option value={4}>4–5</option>
+          <option value={5}>Only 5★</option>
+        </Form.Select>
+      </div>
+    </div>
 
-          <div className="d-flex align-items-center gap-2 mb-3">
-            <span>Filter:</span>
-            <Form.Select
-              value={minRating}
-              onChange={(e) => setMinRating(parseInt(e.target.value, 10))}
-              style={{ maxWidth: 220 }}
-            >
-              <option value={1}>All ratings (1–5)</option>
-              <option value={2}>2–5</option>
-              <option value={3}>3–5</option>
-              <option value={4}>4–5</option>
-              <option value={5}>Only 5 stars</option>
-            </Form.Select>
-          </div>
+    {reviewsError && <Alert variant="danger" className="mb-3">{reviewsError}</Alert>}
 
-          {reviewsError && <Alert variant="danger" className="mb-3">{reviewsError}</Alert>}
+    {loadingReviews ? (
+      <div className="d-flex justify-content-center my-4">
+        <Spinner animation="border" role="status" />
+      </div>
+    ) : reviews.length === 0 ? (
+      <Alert variant="secondary" className="shadow-sm">No reviews yet.</Alert>
+    ) : (
+      <Row className="g-3 reviews-grid">
+        {reviews.map((r) => {
+          const initials = (r.name || "Anonymous")
+            .trim()
+            .split(/\s+/)
+            .slice(0, 2)
+            .map(s => s[0]?.toUpperCase())
+            .join("") || "A";
 
-          {loadingReviews ? (
-            <div className="d-flex justify-content-center my-4">
-              <Spinner animation="border" role="status" />
-            </div>
-          ) : reviews.length === 0 ? (
-            <Alert variant="secondary">No reviews yet.</Alert>
-          ) : (
-            <Row className="g-3">
-              {reviews.map((r) => (
-                <Col key={r.id} md={6} lg={4}>
-                  <Card className="shadow-sm h-100">
-                    <Card.Body>
-                      <div className="d-flex justify-content-between align-items-start mb-1">
-                        <div className="fw-bold">{(r.name || "Anonymous").split(/\s+/)[0]}</div>
-                        <div className="text-warning"><Stars n={r.rating} /></div>
-                      </div>
-                      <Card.Text className="mb-2">{r.message}</Card.Text>
-                      <div className="text-muted small">{new Date(r.created_at).toLocaleString()}</div>
+          return (
+            <Col key={r.id} xs={12} sm={6} lg={4}>
+              <Card className="shadow-sm review-card h-100 border-0">
+                <Card.Body className="p-3 p-md-4">
+                  {/* Header */}
+                  <div className="d-flex justify-content-between align-items-start mb-2">
+                    <div className="d-flex align-items-center gap-2">
+                      <div className="avatar-initials">{initials}</div>
+                      <div className="fw-semibold">{(r.name || "Anonymous").split(/\s+/)[0]}</div>
+                    </div>
 
-                      {/* Admin-only delete */}
-                      {isAdmin && (
-                        <div className="d-flex justify-content-end mt-2">
-                          <Button
-                            variant="outline-danger"
-                            size="sm"
-                            onClick={() => handleDeleteReview(r.id)}
-                            disabled={deletingId === r.id}
-                          >
-                            {deletingId === r.id ? (
-                              <>
-                                <span className="spinner-border spinner-border-sm me-2" />
-                                Deleting...
-                              </>
-                            ) : (
-                              "Delete"
-                            )}
-                          </Button>
-                        </div>
-                      )}
-                    </Card.Body>
-                  </Card>
-                </Col>
-              ))}
-            </Row>
-          )}
-        </Col>
+                    <span className="star-badge" title={`${r.rating} / 5`}>
+                      <i className="bi bi-star-fill me-1" />
+                      {r.rating}
+                    </span>
+                  </div>
+
+                  {/* Quote + message */}
+                  <div className="review-quote mb-2">
+                    <span className="quote-mark" aria-hidden>“</span>
+                    <p className="mb-0">{r.message}</p>
+                  </div>
+
+                  {/* Meta row */}
+                  <div className="d-flex justify-content-between align-items-center gap-2 mt-3">
+                    <div className="text-muted small">
+                      {new Date(r.created_at).toLocaleDateString(undefined, {
+                        year: "numeric", month: "short", day: "numeric",
+                        hour: "2-digit", minute: "2-digit"
+                      })}
+                    </div>
+
+                    {/* Admin-only delete */}
+                    {isAdmin && (
+                      <Button
+                        variant="outline-danger"
+                        size="sm"
+                        className="review-delete"
+                        onClick={() => handleDeleteReview(r.id)}
+                        disabled={deletingId === r.id}
+                        title="Delete review"
+                      >
+                        {deletingId === r.id ? (
+                          <>
+                            <span className="spinner-border spinner-border-sm me-1" />
+                            Deleting
+                          </>
+                        ) : (
+                          <>
+                            <i className="bi bi-trash3 me-1" />
+                            Delete
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                </Card.Body>
+              </Card>
+            </Col>
+          );
+        })}
       </Row>
+    )}
+  </Col>
+</Row>
+
     </Container>
   );
 }

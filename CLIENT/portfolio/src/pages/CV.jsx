@@ -1,6 +1,5 @@
-// src/pages/CV.jsx
 import React, { useEffect, useMemo, useState } from "react";
-import { Container, Row, Col, Form, Button, Alert, Badge } from "react-bootstrap";
+import { Container, Row, Col, Form, Button, Alert, Badge, Card } from "react-bootstrap";
 import MemberCard from "../components/MemberCard";
 import { API_BASE, apiForm } from "../api";
 import "./CV.css";
@@ -49,7 +48,6 @@ export default function CV() {
 
   useEffect(() => {
     let cancelled = false;
-
     async function checkAdmin() {
       try {
         const token = localStorage.getItem("adminToken") || localStorage.getItem("token");
@@ -57,20 +55,14 @@ export default function CV() {
           if (!cancelled) { setIsAdmin(false); setCheckingAdmin(false); }
           return;
         }
-
-        // Validate token against protected endpoint
         const r = await fetch(`${API_BASE}/api/admin/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (!cancelled) {
-          setIsAdmin(r.ok);        // only true if token is valid
-          setCheckingAdmin(false);
-        }
+        if (!cancelled) { setIsAdmin(r.ok); setCheckingAdmin(false); }
       } catch {
         if (!cancelled) { setIsAdmin(false); setCheckingAdmin(false); }
       }
     }
-
     checkAdmin();
     return () => { cancelled = true; };
   }, []);
@@ -80,14 +72,45 @@ export default function CV() {
   const [busy, setBusy] = useState(false);
   const [uploadMember, setUploadMember] = useState("awsam");
   const [uploadFile, setUploadFile] = useState(null);
+  const [dragActive, setDragActive] = useState(false);
 
-  // --- Single upload handler (kept intact; will only be reachable when isAdmin === true) ---
+  function handlePick(e) {
+    const f = e?.target?.files?.[0];
+    if (f) setUploadFile(f);
+  }
+  function onDragOver(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(true);
+  }
+  function onDragLeave(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+  }
+  function onDrop(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    const f = e.dataTransfer?.files?.[0];
+    if (f) setUploadFile(f);
+  }
+  function clearSelection() {
+    setUploadFile(null);
+    setMsg("");
+  }
+
+  // --- Upload handler (admin-only) ---
   async function handleUpload(e) {
     e.preventDefault();
     setMsg("");
 
     if (!uploadFile) {
       setMsg("Please choose a PDF file first.");
+      return;
+    }
+    if (uploadFile.type !== "application/pdf") {
+      setMsg("Only PDF files are allowed.");
       return;
     }
 
@@ -97,13 +120,10 @@ export default function CV() {
 
     setBusy(true);
     try {
-      // Admin-only UI => always try admin endpoint
-      await apiForm("/api/admin/cv", fd);
-      setMsg(`Uploaded (admin) for ${uploadMember}.`);
+      await apiForm("/api/admin/cv", fd); // strict admin endpoint
+      setMsg(`Uploaded for ${uploadMember}.`);
       setUploadFile(null);
     } catch (err) {
-      // As a safety net, you can keep public fallback if you want:
-      // Comment the next block if you want STRICT admin-only.
       const txt = String(err?.message || "");
       if (txt.includes("401") || /unauthorized/i.test(txt)) {
         setMsg("Not authorized. Please log in as admin.");
@@ -121,44 +141,103 @@ export default function CV() {
         Our CVs
       </h1>
 
-      {/* Admin-only Upload box */}
+      {/* Admin-only Upload card */}
       {!checkingAdmin && isAdmin && (
-        <div className="mb-4 p-3 border rounded">
-          <div className="d-flex justify-content-between align-items-center mb-2">
-            <h5 className="mb-0">Upload a CV (PDF)</h5>
-            <Badge bg="success">Admin mode</Badge>
+        <Card className="cv-upload shadow-sm mb-4 border-0">
+          <div className="cv-upload__header">
+            <div className="d-flex align-items-center gap-2">
+              {/* inline SVG icon */}
+              <svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M14,2H6A2,2,0,0,0,4,4V20a2,2,0,0,0,2,2H18a2,2,0,0,0,2-2V8Z" fill="currentColor" opacity="0.18"/>
+                <path d="M14,2V8h6" fill="none" stroke="currentColor" strokeWidth="1.5"/>
+                <path d="M12 12v5m0 0-2-2m2 2 2-2M8 19h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+              <h5 className="m-0">Upload a CV (PDF)</h5>
+            </div>
+            <Badge bg="success">Admin</Badge>
           </div>
 
-          <Form onSubmit={handleUpload} className="row g-2 align-items-end">
-            <Form.Group className="col-md-3">
-              <Form.Label>Member</Form.Label>
-              <Form.Select
-                value={uploadMember}
-                onChange={(e) => setUploadMember(e.target.value)}
-              >
-                <option value="awsam">Awsam</option>
-                <option value="bisan">Bisan</option>
-              </Form.Select>
-            </Form.Group>
+          <Card.Body className="p-3 p-md-4">
+            <Form onSubmit={handleUpload}>
+              <Row className="g-3 align-items-end">
+                <Col md={3}>
+                  <Form.Label className="fw-semibold">Member</Form.Label>
+                  <Form.Select
+                    value={uploadMember}
+                    onChange={(e) => setUploadMember(e.target.value)}
+                  >
+                    <option value="awsam">Awsam</option>
+                    <option value="bisan">Bisan</option>
+                  </Form.Select>
+                </Col>
 
-            <Form.Group className="col-md-6">
-              <Form.Label>PDF file</Form.Label>
-              <Form.Control
-                type="file"
-                accept="application/pdf"
-                onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
-              />
-            </Form.Group>
+                <Col md={6}>
+                  <div
+                    className={`cv-dropzone ${dragActive ? "is-drag" : ""}`}
+                    onDragOver={onDragOver}
+                    onDragLeave={onDragLeave}
+                    onDrop={onDrop}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") document.getElementById("cv-file-input")?.click();
+                    }}
+                    aria-label="Drop PDF here or click to browse"
+                    onClick={() => document.getElementById("cv-file-input")?.click()}
+                  >
+                    <div className="d-flex flex-column align-items-center text-center">
+                      <div className="cv-dropzone__circle mb-2">
+                        <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M12 16V8m0 0-3 3m3-3 3 3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M4 16.5A4.5 4.5 0 0 1 8.5 12H9a5 5 0 0 1 9.58-1.64A3.5 3.5 0 1 1 18.5 16.5H6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" fill="none"/>
+                        </svg>
+                      </div>
+                      <div className="small text-muted">
+                        {uploadFile ? (
+                          <>
+                            <span className="fw-semibold">{uploadFile.name}</span>
+                            {" · "}
+                            <span>{(uploadFile.size / (1024 * 1024)).toFixed(2)} MB</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="fw-semibold">Drag & drop</span> your PDF here{" "}
+                            <span className="text-muted">or</span>{" "}
+                            <span className="link-underline">browse</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <Form.Control
+                      id="cv-file-input"
+                      type="file"
+                      accept="application/pdf"
+                      onChange={handlePick}
+                      className="d-none"
+                    />
+                  </div>
+                </Col>
 
-            <div className="col-md-3">
-              <Button type="submit" className="w-100 btn-purple" disabled={busy}>
-                {busy ? "Uploading..." : "Upload"}
-              </Button>
-            </div>
-          </Form>
+                <Col md={3} className="d-flex gap-2">
+                  <Button type="submit" className="w-100 btn-purple" disabled={busy || !uploadFile}>
+                    {busy ? "Uploading..." : "Upload"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline-secondary"
+                    className="w-100"
+                    onClick={clearSelection}
+                    disabled={busy || !uploadFile}
+                  >
+                    Clear
+                  </Button>
+                </Col>
+              </Row>
 
-          {msg && <Alert variant="secondary" className="mt-3 mb-0">{msg}</Alert>}
-        </div>
+              {msg && <Alert variant="secondary" className="mt-3 mb-0">{msg}</Alert>}
+            </Form>
+          </Card.Body>
+        </Card>
       )}
 
       {/* CV Cards */}
@@ -167,7 +246,6 @@ export default function CV() {
           <Col key={m.slug} md={6}>
             <MemberCard
               {...m}
-              // Always point to DB-backed latest CV
               pdfViewHref={`${API_BASE}/api/cv/latest?member=${m.slug}`}
               pdfHref={`${API_BASE}/api/cv/latest?member=${m.slug}&download=1`}
             />

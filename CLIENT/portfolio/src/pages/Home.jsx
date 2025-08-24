@@ -29,9 +29,8 @@ export default function Home() {
         <Container className="py-5">
             {/* Welcome Title */}
             <div className="text-center">
-                <h1 className="mb-4 text-purple display-4 title-accent title-animate">
-                    Welcome to Our Portfolio
-                </h1>
+                <h1 className="title-accent text-purple">Welcome to Our Portfolio</h1>
+
             </div>
 
             {/* Subtitle Paragraphs Centered */}

@@ -27,3 +27,27 @@
 
 .blog-link { color: #6f42c1; text-decoration: none; }
 .blog-link:hover { text-decoration: underline; }
+.title-accent {
+  position: relative;
+  display: inline-block;
+  padding-bottom: 8px;
+}
+
+.title-accent::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 0;
+  height: 3px;
+  width: 50%;          /* underline takes 50% of the text width */
+  background-color: #6f42c1;
+  border-radius: 2px;
+  animation: glow 2s infinite ease-in-out;
+}
+
+@keyframes glow {
+  0% { opacity: .4; }
+  50% { opacity: 1; }
+  100% { opacity: .4; }
+}

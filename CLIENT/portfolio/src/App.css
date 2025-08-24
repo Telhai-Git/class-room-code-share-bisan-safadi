@@ -48,24 +48,10 @@ body {
   }
 }
 /* UNIFIED title accent — works on all pages */
-.title-accent {
-  position: relative;
-  display: inline-block;        /* keep the element as tight as the text */
-  padding-bottom: 8px;
-  text-decoration: none;
-}
+/* Unified title accent — single source of truth */
 
-.title-accent::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);  /* center perfectly */
-  bottom: 0;
-  height: 3px;
-  width: clamp(100px, 50%, 280px); /* nice responsive width */
-  background-color: #6f42c1;
-  border-radius: 2px;
-  animation: glow 2s infinite ease-in-out;
-}
 
-@keyframes glow { 0% {opacity:.4;} 50% {opacity:1;} 100% {opacity:.4;} }
+/* Unified title accent — centers underline under the text */
+
+
+

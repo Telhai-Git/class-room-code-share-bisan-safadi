@@ -1,14 +1,87 @@
-/* src/pages/Contact.css */
-/* If these exist globally already, keep just what's missing */
+/* Reviews: filter select */
+.reviews-filter {
+  max-width: 180px;
+  border-radius: 12px;
+  border-color: rgba(111,66,193,.25);
+}
 
-.text-purple { color: #6f42c1; }
+/* Grid stays Bootstrap-based; just spacing refinements */
+.reviews-grid .col,
+.reviews-grid .col-12,
+.reviews-grid .col-sm-6,
+.reviews-grid .col-lg-4 {
+  display: flex;
+}
 
-/* Optional underline accent for titles */
+/* Card styling */
+.review-card {
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgba(111,66,193,.05), rgba(111,66,193,.03)) padding-box,
+    radial-gradient(1200px 1200px at -10% -20%, rgba(111,66,193,.10), transparent 50%) border-box;
+}
+
+/* Avatar with initials */
+.avatar-initials {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(111,66,193,.12);
+  color: #5a33a5;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  letter-spacing: .5px;
+}
+
+/* Compact star chip */
+.star-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: .85rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255,193,7,.20); /* soft amber */
+  color: #8a6d1c;
+  border: 1px solid rgba(255,193,7,.35);
+}
+.star-badge .bi-star-fill { color: #ffc107; }
+
+/* Quote bubble */
+.review-quote {
+  position: relative;
+  padding-left: 22px;
+  color: #242424;
+  line-height: 1.5;
+}
+.review-quote .quote-mark {
+  position: absolute;
+  left: 0;
+  top: -6px;
+  font-size: 28px;
+  color: rgba(111,66,193,.35);
+  line-height: 1;
+}
+
+/* Admin delete button subtle alignment */
+.review-delete {
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+/* Card hover polish (optional) */
+.review-card:hover {
+  transform: translateY(-2px);
+  transition: transform .15s ease, box-shadow .15s ease;
+  box-shadow: 0 12px 32px rgba(0,0,0,.08);
+}
 .title-accent {
   position: relative;
   display: inline-block;
-  padding-bottom: 6px;
+  padding-bottom: 8px;
 }
+
 .title-accent::after {
   content: "";
   position: absolute;
@@ -16,84 +89,14 @@
   transform: translateX(-50%);
   bottom: 0;
   height: 3px;
-  width: 140px;
-  background: #6f42c1;
-  border-radius: 999px;
-  opacity: 0.9;
-}
-
-/* Light entrance animation (match Home if you already have one) */
-.title-animate {
-  animation: fadeUp 500ms ease-out both;
-}
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.contact-card {
-  border: 0;
-  border-radius: 1rem;
-}
-
-
-
-.social-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-  opacity: 0.95;
-}
-.social-link:hover { opacity: 1; }
-
-.btn-purple {
+  width: 50%;          /* underline takes 50% of the text width */
   background-color: #6f42c1;
-  border-color: #6f42c1;
-}
-.btn-purple:hover,
-.btn-purple:focus {
-  background-color: #5a33a5;
-  border-color: #5a33a5;
+  border-radius: 2px;
+  animation: glow 2s infinite ease-in-out;
 }
 
-/* Soft page background like your screenshot */
-body .contact-page-bg {
-  background: linear-gradient(180deg, #f5efff 0%, #f7f3ff 100%);
-}
-/* Force the title to be centered */
-.contact-title {
-  text-align: center !important;
-  width: 100%;
-  display: block;
-}
-
-/* Ensure underline is centered under the text */
-.contact-title.title-accent::after {
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-}
-
-.contact-list a {
-  color: inherit;
-  transition: color 0.2s ease-in-out;
-}
-.contact-list a:hover {
-  color: #6f42c1;
-  text-decoration: underline;
-}
-
-.contact-list i {
-  line-height: 1;
-  margin-top: 2px;
-  color: #6f42c1; /* Purple theme color */
-}
-
-.review-star {
-  cursor: pointer;
-  color: #6f42c1;
-  transition: transform 0.2s ease-in-out;
-}
-.review-star:hover {
-  transform: scale(1.2);
+@keyframes glow {
+  0% { opacity: .4; }
+  50% { opacity: 1; }
+  100% { opacity: .4; }
 }
